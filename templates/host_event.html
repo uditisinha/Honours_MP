@@ -1,32 +1,37 @@
-{% extends "base.html" %}
-
-{% block content %}
-
+<!-- host_event.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Host Event</title>
 </head>
 <body>
-    <h1>Host an Event</h1>
-    <form action="/host/" method="POST">
-        <label for="name">Event Name (Optional):</label><br>
-        <input type="text" id="name" name="name" placeholder="Enter event name"><br><br>
-        <button type="submit">Create Event</button>
-    </form>
-    <p><a href="/">Back to Home</a></p>
+    <h1>Host a New Event</h1>
+    
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li style="color: {{ 'green' if category == 'success' else 'red' }};">{{ message }}</li>
-                {% endfor %}
-            </ul>
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
         {% endif %}
     {% endwith %}
+
+    <form method="post">
+        <div>
+            <label for="name">Event Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div>
+            <label for="start_time">Start Time:</label>
+            <input type="datetime-local" id="start_time" name="start_time" required>
+        </div>
+
+        <div>
+            <label for="end_time">End Time:</label>
+            <input type="datetime-local" id="end_time" name="end_time" required>
+        </div>
+
+        <button type="submit">Create Event</button>
+    </form>
 </body>
 </html>
-
-{% endblock %}

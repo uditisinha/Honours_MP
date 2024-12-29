@@ -1,7 +1,32 @@
 <form method="post">
     <label for="email">Email:</label>
     <input type="email" id="email" name="email" required>
+
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="gender">Gender:</label>
+    <select id="gender" name="gender" required>
+        <option value="" disabled selected>Select your gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+    </select>
+
+    <label for="dob">Date of Birth:</label>
+    <input type="date" id="dob" name="dob" required>
+
+    <label for="interests">Interests:</label>
+    <textarea id="interests" name="interests" placeholder="List your interests (optional)"></textarea>
+
+    <label for="city">City:</label>
+    <input type="text" id="city" name="city" required>
+
+    <label for="country">Country:</label>
+    <input type="text" id="country" name="country" required>
+
     <label for="password">Password:</label>
     <input type="password" id="password" name="password" required>
+
     <button type="submit">Sign Up</button>
 </form>

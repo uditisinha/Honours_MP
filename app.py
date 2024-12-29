@@ -5,7 +5,9 @@ import supabase
 import random
 import qrcode
 from io import BytesIO
+from datetime import datetime
 from flask import send_file
+
 
 app = Flask(__name__)
 
@@ -13,26 +15,47 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres.jgmvvjlfnqimbwoqqfam:poonambhogle@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
 app.secret_key = "SecretestKey"
 
-# Initialize Database
 db = SQLAlchemy(app)
 supabase_url = "https://jgmvvjlfnqimbwoqqfam.supabase.co"
 supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZ2amxmbnFpbWJ3b3FxZmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyOTczMTEsImV4cCI6MjA1MDg3MzMxMX0.jED2-HuAoiAdY_BSqFAr2YIaHjF9eSIzdppmSCy1x7Y"  # Ensure this key is correct
 supabase_client = supabase.create_client(supabase_url, supabase_key)
 
-class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(10), unique=True, nullable=False)
-    name = db.Column(db.String(120), nullable=True)
-
-# User Model
 class User(db.Model):
-    email = db.Column(db.String(120), unique=True, nullable=False, primary_key=True)
-    password_hash = db.Column(db.String(200), nullable=False)
+    __tablename__ = 'user'
+    name = db.Column(db.String(120), nullable=False)
+    gender = db.Column(db.String(10), nullable=False)
+    dob = db.Column(db.Date, nullable=False)
+    interests = db.Column(db.Text, nullable=True)
+    city = db.Column(db.String(120), nullable=False)
+    country = db.Column(db.String(120), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)  # Added missing field
+    email = db.Column(db.String(120), primary_key=True, unique=True, nullable=False) 
 
+class Event(db.Model):
+    __tablename__ = 'event'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    code = db.Column(db.String(10), unique=True, nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    host = db.Column(db.String(120), nullable=False)
+
+# UserEvent Model (Many-to-Many relationship between User and Event)
 class UserEvent(db.Model):
+    __tablename__ = 'user_event'
     user_email = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
-    event_code = db.Column(db.String(10), db.ForeignKey('event.code'), primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
 
+# UserMatches Model (User matching table with self-referencing foreign keys)
+class UserMatches(db.Model):
+    __tablename__ = 'user_matches'
+    email_1 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
+    email_2 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
+
+with app.app_context():
+    db.drop_all()  # Only if you need to reset the tables
+    db.create_all()
 # Routes
 @app.route('/')
 def home():
@@ -71,22 +94,58 @@ def matches():
 @app.route('/signup/', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form['password']
-        hashed_password = generate_password_hash(password)
-        
-        if User.query.filter_by(email=email).first():
-            flash("Email already registered. Please log in.", 'danger')
-            return redirect(url_for('login'))
-        
         try:
-            new_user = User(email=email, password_hash=hashed_password)
+            name = request.form.get('name')
+            gender = request.form.get('gender')
+            dob = request.form.get('dob')
+            interests = request.form.get('interests')
+            city = request.form.get('city')
+            country = request.form.get('country')
+            password = request.form.get('password')
+            email = request.form.get('email')  # Add email field to your form
+
+            # Validate required fields
+            if not all([name, gender, dob, city, country, password, email]):
+                flash("All fields except Interests are required.", 'danger')
+                return redirect(url_for('signup'))
+
+            # Check if the date format is valid
+            try:
+                dob_parsed = datetime.strptime(dob, '%Y-%m-%d').date()
+            except ValueError:
+                flash("Invalid date format. Please use YYYY-MM-DD.", 'danger')
+                return redirect(url_for('signup'))
+
+            # Check if email already exists
+            if User.query.filter_by(email=email).first():
+                flash("Email already exists. Please log in.", 'danger')
+                return redirect(url_for('login'))
+
+            hashed_password = generate_password_hash(password)
+
+            new_user = User(
+                name=name,
+                gender=gender,
+                dob=dob_parsed,
+                interests=interests,
+                city=city,
+                country=country,
+                password_hash=hashed_password,
+                email=email
+            )
+
             db.session.add(new_user)
             db.session.commit()
+
             flash("Account created successfully! Please log in.", 'success')
             return redirect(url_for('login'))
+
         except Exception as e:
-            flash(f"Sign-up failed: {e}", 'danger')
+            db.session.rollback()  # Rollback on error
+            print(f"Error during signup: {str(e)}")  # Log the error
+            flash(f"Sign-up failed. Please try again.", 'danger')
+            return redirect(url_for('signup'))
+
     return render_template('signup.html')
 
 @app.route('/login/', methods=['GET', 'POST'])
@@ -149,14 +208,48 @@ def edit_profile():
 
     return render_template('edit_profile.html', user=user)
 
+# Update the Event route in app.py
 @app.route('/host/', methods=['GET', 'POST'])
 def host_event():
-    if request.method == 'POST':
-        name = request.form.get('name')  # Event name (optional)
-        code = f"{random.randint(1000, 9999)}"  # Generate 4-digit code
-        event = Event(code=code, name=name)
+    if 'user' not in session:
+        flash("Please log in to host an event.", 'warning')
+        return redirect(url_for('login'))
 
+    if request.method == 'POST':
         try:
+            name = request.form.get('name')
+            start_time_str = request.form.get('start_time')
+            end_time_str = request.form.get('end_time')
+            
+            # Validate required fields
+            if not all([name, start_time_str, end_time_str]):
+                flash("All fields are required.", 'danger')
+                return redirect(url_for('host'))
+
+            # Parse datetime strings
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
+
+            # Validate end time is after start time
+            if end_time <= start_time:
+                flash("End time must be after start time.", 'danger')
+                return redirect(url_for('host'))
+
+            # Generate unique 4-digit code
+            while True:
+                code = f"{random.randint(1000, 9999)}"
+                if not Event.query.filter_by(code=code).first():
+                    break
+
+            # Create new event
+            event = Event(
+                name=name,
+                code=code,
+                start_time=start_time,
+                end_time=end_time,
+                host=session['user']  # Use logged-in user's email as host
+            )
+
             db.session.add(event)
             db.session.commit()
 
@@ -166,10 +259,17 @@ def host_event():
             qr.save(buffer)
             buffer.seek(0)
 
-            flash(f"Event created successfully! Code: {code}", 'success')
+            flash(f"Event '{name}' created successfully! Code: {code}", 'success')
             return send_file(buffer, mimetype="image/png", as_attachment=True, download_name="event_qr.png")
+
+        except ValueError as e:
+            flash("Invalid date/time format. Please use the datetime picker.", 'danger')
+            return redirect(url_for('host'))
         except Exception as e:
-            flash(f"Failed to create event: {e}", 'danger')
+            db.session.rollback()
+            print(f"Error creating event: {str(e)}")
+            flash("Failed to create event. Please try again.", 'danger')
+            return redirect(url_for('host'))
 
     return render_template('host_event.html')
 
