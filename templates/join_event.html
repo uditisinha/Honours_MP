@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Event</title>
+</head>
+<body>
+    <h1>Join an Event</h1>
+    <form action="/join/" method="POST">
+        <label for="code">Enter Event Code:</label><br>
+        <input type="text" id="code" name="code" placeholder="Enter event code" required><br><br>
+        <button type="submit">Join Event</button>
+    </form>
+    <p><a href="/">Back to Home</a></p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li style="color: {{ 'green' if category == 'success' else 'red' }};">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    {% if event_users %}
+    <h2>Users in this Event:</h2>
+    <ul>
+        {% for user in event_users %}
+        <li>{{ user.email }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</body>
+</html>
+
+{% endblock %}

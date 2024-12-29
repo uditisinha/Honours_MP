@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search</title>
+</head>
+<body>
+    <h1>Search Page</h1>
+    <form id="search-form" method="POST" action="/search/">
+        <input type="text" name="query" placeholder="Enter your query">
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
+        <button type="submit">Search</button>
+    </form>
+    
+    <div id="location">
+        <p id="location-display"></p>
+    </div>
+
+    <script>
+        // Request user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                // Get latitude and longitude
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Display location (optional)
+                document.getElementById('location-display').textContent = 
+                    `Your Location: Latitude ${latitude}, Longitude ${longitude}`;
+
+                // Set hidden input values
+                document.getElementById('latitude').value = latitude;
+                document.getElementById('longitude').value = longitude;
+            }, function(error) {
+                console.error("Error getting location: ", error);
+            });
+        } else {
+            console.error("Geolocation is not supported by this browser.");
+        }
+    </script>
+
+    <div>
+        <h2>Search Results</h2>
+        <ul>
+            {% for result in results %}
+                <li>{{ result }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

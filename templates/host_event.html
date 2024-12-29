@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Event</title>
+</head>
+<body>
+    <h1>Host an Event</h1>
+    <form action="/host/" method="POST">
+        <label for="name">Event Name (Optional):</label><br>
+        <input type="text" id="name" name="name" placeholder="Enter event name"><br><br>
+        <button type="submit">Create Event</button>
+    </form>
+    <p><a href="/">Back to Home</a></p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li style="color: {{ 'green' if category == 'success' else 'red' }};">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+</body>
+</html>
+
+{% endblock %}
