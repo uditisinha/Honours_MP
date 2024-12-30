@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Get to Know You Questionnaire</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" class="needs-validation" novalidate>
+        <div class="mb-4">
+            <label for="q1_fictional_character" class="form-label">If you could be any fictional character for a day, who would you choose and why?</label>
+            <textarea class="form-control" id="q1_fictional_character" name="q1_fictional_character" rows="3" required>{{ existing_response.q1_fictional_character if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="q2_friendship_value" class="form-label">What do you value most in a friendship, and why?</label>
+            <textarea class="form-control" id="q2_friendship_value" name="q2_friendship_value" rows="3" required>{{ existing_response.q2_friendship_value if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="q3_group_role" class="form-label">When working in a group, what role do you usually take?</label>
+            <textarea class="form-control" id="q3_group_role" name="q3_group_role" rows="3" required>{{ existing_response.q3_group_role if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="q4_adventurous_activity" class="form-label">What's the most adventurous thing you'd do if fear wasn't a factor?</label>
+            <textarea class="form-control" id="q4_adventurous_activity" name="q4_adventurous_activity" rows="3" required>{{ existing_response.q4_adventurous_activity if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="q5_ultimate_day" class="form-label">If you could plan the ultimate day, what would it look like from morning to night?</label>
+            <textarea class="form-control" id="q5_ultimate_day" name="q5_ultimate_day" rows="3" required>{{ existing_response.q5_ultimate_day if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="q6_comfort_zone" class="form-label">How do you feel about trying new things or stepping out of your comfort zone?</label>
+            <textarea class="form-control" id="q6_comfort_zone" name="q6_comfort_zone" rows="3" required>{{ existing_response.q6_comfort_zone if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="q7_conversation_type" class="form-label">What type of conversations do you enjoy the most?</label>
+            <textarea class="form-control" id="q7_conversation_type" name="q7_conversation_type" rows="3" required>{{ existing_response.q7_conversation_type if existing_response else '' }}</textarea>
+            <div class="invalid-feedback">Please provide an answer.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Responses</button>
+    </form>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

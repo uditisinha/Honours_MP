@@ -10,55 +10,23 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime
+from models import db, User, UserResponse, Event, UserEvent, UserMatches
+from personality_matcher import update_ranked_matches_route
 
 
 app = Flask(__name__)
-
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres.jgmvvjlfnqimbwoqqfam:poonambhogle@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
 app.secret_key = "SecretestKey"
 
-db = SQLAlchemy(app)
+db.init_app(app)
+
 supabase_url = "https://jgmvvjlfnqimbwoqqfam.supabase.co"
 supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZ2amxmbnFpbWJ3b3FxZmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyOTczMTEsImV4cCI6MjA1MDg3MzMxMX0.jED2-HuAoiAdY_BSqFAr2YIaHjF9eSIzdppmSCy1x7Y"  # Ensure this key is correct
 supabase_client = supabase.create_client(supabase_url, supabase_key)
 
-class User(db.Model):
-    __tablename__ = 'user'
-    email = db.Column(db.String(120), primary_key=True, unique=True, nullable=False)
-    name = db.Column(db.String(120), nullable=False)
-    gender = db.Column(db.String(10), nullable=False)
-    dob = db.Column(db.Date, nullable=False)
-    interests = db.Column(db.JSON, nullable=True)  # Changed to JSON type
-    city = db.Column(db.String(120), nullable=False)
-    country = db.Column(db.String(120), nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
 
-class Event(db.Model):
-    __tablename__ = 'event'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    code = db.Column(db.String(10), unique=True, nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime, nullable=False)
-    host = db.Column(db.String(120), nullable=False)
 
-# UserEvent Model (Many-to-Many relationship between User and Event)
-class UserEvent(db.Model):
-    __tablename__ = 'user_event'
-    user_email = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
-
-# UserMatches Model (User matching table with self-referencing foreign keys)
-class UserMatches(db.Model):
-    __tablename__ = 'user_matches'
-    email_1 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
-    email_2 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
-
-# with app.app_context():
-#     db.drop_all()  # Only if you need to reset the tables
-#     db.create_all()
 # Routes
 @app.route('/')
 def home():
@@ -150,73 +118,6 @@ def signup():
             return redirect(url_for('signup'))
 
     return render_template('signup.html')
-
-@app.route('/ranked_matches/<int:event_id>/', methods=['GET'])
-def ranked_matches(event_id):
-    if 'user' not in session:
-        flash("Please log in to view matches.", 'warning')
-        return redirect(url_for('login'))
-
-    # Fetch the logged-in user
-    user_email = session['user']
-    user = User.query.filter_by(email=user_email).first()
-    if not user or not user.interests:
-        flash("No interests found for your profile.", 'info')
-        return redirect(url_for('dashboard'))
-
-    # Get all users in the event
-    event_users = User.query.join(UserEvent, User.email == UserEvent.user_email)\
-                            .filter(UserEvent.event_id == event_id).all()
-
-    # Remove the logged-in user from the list
-    other_users = [u for u in event_users if u.email != user_email]
-
-    # Prepare the dataset
-    user_data = {
-        "email": [user.email] + [u.email for u in other_users],
-        "interests": [user.interests] + [u.interests for u in other_users],
-        "dob": [user.dob] + [u.dob for u in other_users],
-        "gender": [user.gender] + [u.gender for u in other_users],
-        "city": [user.city] + [u.city for u in other_users],
-        "country": [user.country] + [u.country for u in other_users]
-    }
-    dataset = pd.DataFrame(user_data)
-
-    # One-hot encode interests
-    interests = dataset['interests'].apply(lambda x: ', '.join(x) if isinstance(x, list) else '').str.get_dummies(', ')
-    interests.fillna(0, inplace=True)
-
-    # Calculate age
-    dob = pd.to_datetime(dataset['dob'])
-    current_date = datetime.now()
-    dataset['age'] = (current_date - dob).dt.days // 365.25  # Approximate years
-
-    # One-hot encode gender
-    gender_encoded = pd.get_dummies(dataset['gender'])
-
-    # One-hot encode city and country
-    location_encoded = pd.get_dummies(dataset[['city', 'country']])
-
-    # Combine all features
-    features = pd.concat([interests, gender_encoded, dataset[['age']], location_encoded], axis=1)
-
-    # Calculate cosine similarity
-    similarity_matrix = cosine_similarity(features)
-
-    # Find the index of the logged-in user
-    user_index = 0
-
-    # Get similarity scores for other users
-    similarity_scores = [
-        {"user": other_users[i - 1], "score": similarity_matrix[user_index, i]}
-        for i in range(1, len(similarity_matrix))  # Skip the logged-in user
-    ]
-
-    # Sort by similarity score in descending order
-    ranked_users = sorted(similarity_scores, key=lambda x: x["score"], reverse=True)
-
-    return render_template('ranked_matches.html', matches=ranked_users)
-
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
@@ -378,10 +279,58 @@ def join_event():
 
     return render_template('join_event.html', event_users=event_users)
 
+@app.route('/questionnaire/', methods=['GET', 'POST'])
+def questionnaire():
+    if 'user' not in session:
+        flash("Please log in to complete the questionnaire.", 'warning')
+        return redirect(url_for('login'))
+    
+    user_email = session['user']
+    existing_response = UserResponse.query.filter_by(user_email=user_email).first()
+    
+    if request.method == 'POST':
+        try:
+            # Get responses from form
+            responses = {
+                'q1_fictional_character': request.form.get('q1_fictional_character'),
+                'q2_friendship_value': request.form.get('q2_friendship_value'),
+                'q3_group_role': request.form.get('q3_group_role'),
+                'q4_adventurous_activity': request.form.get('q4_adventurous_activity'),
+                'q5_ultimate_day': request.form.get('q5_ultimate_day'),
+                'q6_comfort_zone': request.form.get('q6_comfort_zone'),
+                'q7_conversation_type': request.form.get('q7_conversation_type')
+            }
+            
+            # Check if all questions are answered
+            if not all(responses.values()):
+                flash("Please answer all questions.", 'warning')
+                return redirect(url_for('questionnaire'))
+            
+            if existing_response:
+                # Update existing response
+                for key, value in responses.items():
+                    setattr(existing_response, key, value)
+            else:
+                # Create new response
+                new_response = UserResponse(user_email=user_email, **responses)
+                db.session.add(new_response)
+            
+            db.session.commit()
+            flash("Thank you for completing the questionnaire!", 'success')
+            return redirect(url_for('profile'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error saving responses: {str(e)}", 'danger')
+            return redirect(url_for('questionnaire'))
+    
+    return render_template('questionnaire.html', existing_response=existing_response)
 
 
 if __name__ == "__main__":
     # Create tables
     with app.app_context():
         db.create_all()
+ 
+    update_ranked_matches_route(app)
     app.run(debug=True)
