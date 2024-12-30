@@ -1,32 +1,121 @@
-<form method="post">
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+    <style>
+        .interests-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .interest-tag {
+            display: inline-block;
+            position: relative;
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .interest-tag input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .interest-tag.selected {
+            background-color: #e0e7ff;
+            border-color: #818cf8;
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body>
+    <form method="post">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
 
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required>
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
 
-    <label for="gender">Gender:</label>
-    <select id="gender" name="gender" required>
-        <option value="" disabled selected>Select your gender</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Other">Other</option>
-    </select>
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender" required>
+            <option value="" disabled selected>Select your gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
 
-    <label for="dob">Date of Birth:</label>
-    <input type="date" id="dob" name="dob" required>
+        <label for="dob">Date of Birth:</label>
+        <input type="date" id="dob" name="dob" required>
 
-    <label for="interests">Interests:</label>
-    <textarea id="interests" name="interests" placeholder="List your interests (optional)"></textarea>
+        <label>Interests:</label>
+        <div class="interests-container">
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Reading">
+                Reading
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Travel">
+                Travel
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Music">
+                Music
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Sports">
+                Sports
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Cooking">
+                Cooking
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Photography">
+                Photography
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Art">
+                Art
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Gaming">
+                Gaming
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Movies">
+                Movies
+            </label>
+            <label class="interest-tag">
+                <input type="checkbox" name="interests[]" value="Technology">
+                Technology
+            </label>
+            <!-- Add more interests as needed -->
+        </div>
 
-    <label for="city">City:</label>
-    <input type="text" id="city" name="city" required>
+        <label for="city">City:</label>
+        <input type="text" id="city" name="city" required>
 
-    <label for="country">Country:</label>
-    <input type="text" id="country" name="country" required>
+        <label for="country">Country:</label>
+        <input type="text" id="country" name="country" required>
 
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
 
-    <button type="submit">Sign Up</button>
-</form>
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <script>
+        // Add click handling for interest tags
+        document.querySelectorAll('.interest-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected', checkbox.checked);
+            });
+        });
+    </script>
+</body>
+</html>

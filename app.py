@@ -5,8 +5,11 @@ import supabase
 import random
 import qrcode
 from io import BytesIO
-from datetime import datetime
 from flask import send_file
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.preprocessing import OneHotEncoder
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -22,14 +25,14 @@ supabase_client = supabase.create_client(supabase_url, supabase_key)
 
 class User(db.Model):
     __tablename__ = 'user'
+    email = db.Column(db.String(120), primary_key=True, unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
     dob = db.Column(db.Date, nullable=False)
-    interests = db.Column(db.Text, nullable=True)
+    interests = db.Column(db.JSON, nullable=True)  # Changed to JSON type
     city = db.Column(db.String(120), nullable=False)
     country = db.Column(db.String(120), nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)  # Added missing field
-    email = db.Column(db.String(120), primary_key=True, unique=True, nullable=False) 
+    password_hash = db.Column(db.String(256), nullable=False)
 
 class Event(db.Model):
     __tablename__ = 'event'
@@ -53,9 +56,9 @@ class UserMatches(db.Model):
     email_2 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
 
-with app.app_context():
-    db.drop_all()  # Only if you need to reset the tables
-    db.create_all()
+# with app.app_context():
+#     db.drop_all()  # Only if you need to reset the tables
+#     db.create_all()
 # Routes
 @app.route('/')
 def home():
@@ -98,11 +101,11 @@ def signup():
             name = request.form.get('name')
             gender = request.form.get('gender')
             dob = request.form.get('dob')
-            interests = request.form.get('interests')
+            interests = request.form.getlist('interests[]')  # Get list of selected interests
             city = request.form.get('city')
             country = request.form.get('country')
             password = request.form.get('password')
-            email = request.form.get('email')  # Add email field to your form
+            email = request.form.get('email')
 
             # Validate required fields
             if not all([name, gender, dob, city, country, password, email]):
@@ -127,7 +130,7 @@ def signup():
                 name=name,
                 gender=gender,
                 dob=dob_parsed,
-                interests=interests,
+                interests=interests,  # Store as list directly
                 city=city,
                 country=country,
                 password_hash=hashed_password,
@@ -141,12 +144,79 @@ def signup():
             return redirect(url_for('login'))
 
         except Exception as e:
-            db.session.rollback()  # Rollback on error
-            print(f"Error during signup: {str(e)}")  # Log the error
+            db.session.rollback()
+            print(f"Error during signup: {str(e)}")
             flash(f"Sign-up failed. Please try again.", 'danger')
             return redirect(url_for('signup'))
 
     return render_template('signup.html')
+
+@app.route('/ranked_matches/<int:event_id>/', methods=['GET'])
+def ranked_matches(event_id):
+    if 'user' not in session:
+        flash("Please log in to view matches.", 'warning')
+        return redirect(url_for('login'))
+
+    # Fetch the logged-in user
+    user_email = session['user']
+    user = User.query.filter_by(email=user_email).first()
+    if not user or not user.interests:
+        flash("No interests found for your profile.", 'info')
+        return redirect(url_for('dashboard'))
+
+    # Get all users in the event
+    event_users = User.query.join(UserEvent, User.email == UserEvent.user_email)\
+                            .filter(UserEvent.event_id == event_id).all()
+
+    # Remove the logged-in user from the list
+    other_users = [u for u in event_users if u.email != user_email]
+
+    # Prepare the dataset
+    user_data = {
+        "email": [user.email] + [u.email for u in other_users],
+        "interests": [user.interests] + [u.interests for u in other_users],
+        "dob": [user.dob] + [u.dob for u in other_users],
+        "gender": [user.gender] + [u.gender for u in other_users],
+        "city": [user.city] + [u.city for u in other_users],
+        "country": [user.country] + [u.country for u in other_users]
+    }
+    dataset = pd.DataFrame(user_data)
+
+    # One-hot encode interests
+    interests = dataset['interests'].apply(lambda x: ', '.join(x) if isinstance(x, list) else '').str.get_dummies(', ')
+    interests.fillna(0, inplace=True)
+
+    # Calculate age
+    dob = pd.to_datetime(dataset['dob'])
+    current_date = datetime.now()
+    dataset['age'] = (current_date - dob).dt.days // 365.25  # Approximate years
+
+    # One-hot encode gender
+    gender_encoded = pd.get_dummies(dataset['gender'])
+
+    # One-hot encode city and country
+    location_encoded = pd.get_dummies(dataset[['city', 'country']])
+
+    # Combine all features
+    features = pd.concat([interests, gender_encoded, dataset[['age']], location_encoded], axis=1)
+
+    # Calculate cosine similarity
+    similarity_matrix = cosine_similarity(features)
+
+    # Find the index of the logged-in user
+    user_index = 0
+
+    # Get similarity scores for other users
+    similarity_scores = [
+        {"user": other_users[i - 1], "score": similarity_matrix[user_index, i]}
+        for i in range(1, len(similarity_matrix))  # Skip the logged-in user
+    ]
+
+    # Sort by similarity score in descending order
+    ranked_users = sorted(similarity_scores, key=lambda x: x["score"], reverse=True)
+
+    return render_template('ranked_matches.html', matches=ranked_users)
+
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
@@ -264,12 +334,12 @@ def host_event():
 
         except ValueError as e:
             flash("Invalid date/time format. Please use the datetime picker.", 'danger')
-            return redirect(url_for('host'))
+            return redirect(url_for('host_event'))
         except Exception as e:
             db.session.rollback()
             print(f"Error creating event: {str(e)}")
             flash("Failed to create event. Please try again.", 'danger')
-            return redirect(url_for('host'))
+            return redirect(url_for('host_event'))
 
     return render_template('host_event.html')
 
@@ -286,22 +356,23 @@ def join_event():
 
         if event:
             # Check if the user is already part of the event
-            existing_user_event = UserEvent.query.filter_by(user_email=session['user'], event_code=code).first()
+            existing_user_event = UserEvent.query.filter_by(user_email=session['user'], event_id=event.id).first()
             if not existing_user_event:
                 # Add the logged-in user to the event
-                user_event = UserEvent(user_email=session['user'], event_code=code)
+                user_event = UserEvent(user_email=session['user'], event_id=event.id)
                 try:
                     db.session.add(user_event)
                     db.session.commit()
                     flash("Successfully joined the event!", 'success')
                 except Exception as e:
-                    flash(f"Failed to join the event: {e}", 'danger')
+                    db.session.rollback()  # Handle transaction rollback
+                    flash(f"Failed to join the event: {str(e)}", 'danger')
             else:
                 flash("You are already part of this event.", 'info')
 
             # Fetch all users in the event
             event_users = User.query.join(UserEvent, User.email == UserEvent.user_email)\
-                                    .filter(UserEvent.event_code == code).all()
+                                    .filter(UserEvent.event_id == event.id).all()
         else:
             flash("Invalid event code. Please try again.", 'danger')
 

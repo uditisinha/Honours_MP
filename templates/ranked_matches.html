@@ -1,0 +1,6 @@
+<h1>Ranked Similarity Matches</h1>
+<ul>
+  {% for match in matches %}
+    <li>{{ match.user.name }} - Similarity Score: {{ match.score|round(2) }}</li>
+  {% endfor %}
+</ul>
