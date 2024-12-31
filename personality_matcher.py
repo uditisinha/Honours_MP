@@ -8,14 +8,35 @@ from datetime import datetime
 import json
 import re
 
+GOOGLE_API_KEY='AIzaSyADvYMBmX_xCw_m0IzrD0FP8SpvWXzJp4g'
+
+
 # Import models directly from app to avoid circular imports
 from models import db, User, UserResponse, Event, UserEvent, UserMatches
-
 def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dict) -> float:
     """
     Calculate personality similarity between two users based on their questionnaire responses
     using natural language understanding and semantic comparison
     """
+    genai.configure(api_key=GOOGLE_API_KEY)
+    
+    # Create a model instance
+    generation_config = {
+        "temperature": 0,
+        "top_p": 0.8,
+        "top_k": 50,
+        "max_output_tokens": 8192,
+    }
+    
+    try:
+        model = genai.GenerativeModel(
+            model_name="gemini-pro",
+            generation_config=generation_config
+        )
+        print("API configured successfully!")
+    except Exception as e:
+        print(f"Error: {e}")
+    
     # Clean up responses by removing SQLAlchemy metadata
     def clean_responses(responses: Dict) -> Dict:
         return {
@@ -40,7 +61,7 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
     try:
         # Format responses for similarity analysis
         prompt = f"""
-        Compare these two sets of responses and provide similarity scores between 0 and 1 for each question.:
+        Compare these two sets of responses and provide similarity scores between 0 and 1 for each question:
 
         User 1:
         {json.dumps(user1_clean, indent=2)}
@@ -57,32 +78,32 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
 
         Return only a JSON object with numeric scores like this:
         {{
-            "q1_score": 0.85,
-            "q2_score": 0.72,
-            "q3_score": 0.93,
-            "q4_score": 0.65,
-            "q5_score": 0.78,
-            "q6_score": 0.88,
-            "q7_score": 0.70
+            "q1_fictional_character": 0.85,
+            "q2_friendship_value": 0.72,
+            "q3_group_role": 0.93,
+            "q4_adventurous_activity": 0.65,
+            "q5_ultimate_day": 0.78,
+            "q6_comfort_zone": 0.88,
+            "q7_conversation_type": 0.70
         }}
         """
         
         # Generate response using Gemini
-        response = genai.generate_text(prompt)
+        response = model.generate_content(prompt)
         
         # Extract JSON from response
-        json_match = re.search(r'\{[\s\S]*\}', response)
+        json_match = re.search(r'\{[\s\S]*\}', response.text)
         if not json_match:
             raise ValueError("No JSON found in response")
         
         scores = json.loads(json_match.group())
         
-        # Calculate weighted average
+        # Calculate weighted average using matching keys
         weighted_score = sum(
-            scores[q] * weights[q]
-            for q in weights.keys()
+            scores.get(q, 0) * weight
+            for q, weight in weights.items()
         ) / sum(weights.values())
-        
+
         return max(0.0, min(1.0, weighted_score))  # Ensure score is between 0 and 1
         
     except Exception as e:
@@ -142,6 +163,8 @@ def calculate_profile_similarity(current_user: User, other_users: List[User]) ->
         {"user": user, "score": float(score)}
         for user, score in zip(other_users, similarities)
     ]
+
+    print(similarity_scores)
     
     return sorted(similarity_scores, key=lambda x: x["score"], reverse=True)
 
@@ -184,7 +207,7 @@ def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
         profile_score = next((s['score'] for s in profile_scores if s['user'].email == user.email), 0)
         personality_score = next((s['score'] for s in personality_scores if s['user'].email == user.email), 0)
         
-        combined_score = (profile_score + personality_score) / 2
+        combined_score = (profile_score * 0.3 + personality_score * 0.7)
         combined_scores.append({
             'user': user,
             'score': combined_score,
