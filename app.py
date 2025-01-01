@@ -179,12 +179,74 @@ def edit_profile():
 
     return render_template('edit_profile.html', user=user)
 
-# Update the Event route in app.py
+def check_user_active_events(user_email):
+    """
+    Check if user has any active events and clean up expired events.
+    Returns tuple (is_active, active_event_name) where is_active is True if user 
+    has an active event (including as host), and active_event_name is the name of that event.
+    """
+    current_time = datetime.now()
+    
+    # Check events where user is a participant
+    user_events = db.session.query(Event, UserEvent).join(UserEvent).filter(
+        UserEvent.user_email == user_email
+    ).all()
+    
+    # Check events where user is a host
+    hosted_events = Event.query.filter_by(host=user_email).all()
+    
+    # Clean up expired events and check for active ones
+    expired_user_events = []
+    expired_hosted_events = []
+    active_event = None
+    
+    # Check participant events
+    for event, user_event in user_events:
+        if event.end_time > current_time:
+            active_event = event
+        else:
+            expired_user_events.append(user_event)
+    
+    # Check hosted events
+    for event in hosted_events:
+        if event.end_time > current_time:
+            active_event = event
+        else:
+            expired_hosted_events.append(event)
+    
+    try:
+        # Delete expired event associations for participants
+        if expired_user_events:
+            for user_event in expired_user_events:
+                db.session.delete(user_event)
+        
+        # Delete expired events hosted by the user
+        if expired_hosted_events:
+            for event in expired_hosted_events:
+                # First delete all associated user_event entries
+                UserEvent.query.filter_by(event_id=event.id).delete()
+                # Then delete the event itself
+                db.session.delete(event)
+        
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error cleaning up expired events: {str(e)}")
+    
+    return (active_event is not None, active_event.name if active_event else None)
+
 @app.route('/host/', methods=['GET', 'POST'])
 def host_event():
     if 'user' not in session:
         flash("Please log in to host an event.", 'warning')
         return redirect(url_for('login'))
+
+    # Check if user has active events
+    has_active_event, active_event_name = check_user_active_events(session['user'])
+    if has_active_event:
+        flash(f"You are already part of an active event: {active_event_name}. "
+              "Please wait until it ends before hosting another event.", 'warning')
+        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         try:
@@ -195,7 +257,7 @@ def host_event():
             # Validate required fields
             if not all([name, start_time_str, end_time_str]):
                 flash("All fields are required.", 'danger')
-                return redirect(url_for('host'))
+                return redirect(url_for('host_event'))
 
             # Parse datetime strings
             start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
@@ -204,7 +266,7 @@ def host_event():
             # Validate end time is after start time
             if end_time <= start_time:
                 flash("End time must be after start time.", 'danger')
-                return redirect(url_for('host'))
+                return redirect(url_for('host_event'))
 
             # Generate unique 4-digit code
             while True:
@@ -218,7 +280,7 @@ def host_event():
                 code=code,
                 start_time=start_time,
                 end_time=end_time,
-                host=session['user']  # Use logged-in user's email as host
+                host=session['user']
             )
 
             db.session.add(event)
@@ -244,11 +306,53 @@ def host_event():
 
     return render_template('host_event.html')
 
+def get_user_active_event(user_email):
+    """
+    Get user's active event details.
+    Returns (event_id, is_expired) tuple. Returns (None, False) if no event found.
+    """
+    current_time = datetime.now()
+    
+    # Check events where user is a participant
+    user_event = db.session.query(Event, UserEvent).join(UserEvent).filter(
+        UserEvent.user_email == user_email
+    ).first()
+    
+    # Check events where user is a host
+    hosted_event = Event.query.filter_by(host=user_email).first()
+    
+    active_event = None
+    is_expired = False
+    
+    # Check participant event
+    if user_event:
+        event, _ = user_event
+        if event.end_time <= current_time:
+            is_expired = True
+        else:
+            active_event = event
+            
+    # Check hosted event
+    if hosted_event:
+        if hosted_event.end_time <= current_time:
+            is_expired = True
+        elif not active_event:  # Only use hosted event if no participant event found
+            active_event = hosted_event
+            
+    return (active_event.id if active_event else None, is_expired)
+
 @app.route('/join/', methods=['GET', 'POST'])
 def join_event():
     if 'user' not in session:
         flash("Please log in to join an event.", 'warning')
         return redirect(url_for('login'))
+
+    # Check if user has active events
+    has_active_event, active_event_name = check_user_active_events(session['user'])
+    if has_active_event:
+        flash(f"You are already part of an active event: {active_event_name}. "
+              "Please wait until it ends before joining another event.", 'warning')
+        return redirect(url_for('dashboard'))
 
     event_users = []
     if request.method == 'POST':
@@ -256,20 +360,20 @@ def join_event():
         event = Event.query.filter_by(code=code).first()
 
         if event:
-            # Check if the user is already part of the event
-            existing_user_event = UserEvent.query.filter_by(user_email=session['user'], event_id=event.id).first()
-            if not existing_user_event:
-                # Add the logged-in user to the event
-                user_event = UserEvent(user_email=session['user'], event_id=event.id)
-                try:
-                    db.session.add(user_event)
-                    db.session.commit()
-                    flash("Successfully joined the event!", 'success')
-                except Exception as e:
-                    db.session.rollback()  # Handle transaction rollback
-                    flash(f"Failed to join the event: {str(e)}", 'danger')
-            else:
-                flash("You are already part of this event.", 'info')
+            # Check if the event has already ended
+            if event.end_time <= datetime.now():
+                flash("This event has already ended.", 'warning')
+                return redirect(url_for('join_event'))
+
+            # Add the logged-in user to the event
+            user_event = UserEvent(user_email=session['user'], event_id=event.id)
+            try:
+                db.session.add(user_event)
+                db.session.commit()
+                flash("Successfully joined the event!", 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Failed to join the event: {str(e)}", 'danger')
 
             # Fetch all users in the event
             event_users = User.query.join(UserEvent, User.email == UserEvent.user_email)\
@@ -326,6 +430,14 @@ def questionnaire():
     
     return render_template('questionnaire.html', existing_response=existing_response)
 
+@app.context_processor
+def utility_processor():
+    def get_active_event_id():
+        if 'user' in session:
+            event_id, is_expired = get_user_active_event(session['user'])
+            return event_id
+        return None
+    return dict(get_active_event_id=get_active_event_id)
 
 if __name__ == "__main__":
     # Create tables

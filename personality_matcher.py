@@ -230,8 +230,39 @@ def update_ranked_matches_route(app):
         
         user_email = session['user']
         
-        # Get combined rankings
-        print("HI")
-        matches = get_combined_rankings(event_id, user_email)
-        
-        return render_template('ranked_matches.html', matches=matches)
+        try:
+            current_time = datetime.now()
+            event = Event.query.get_or_404(event_id)
+            
+            # Check if event has expired
+            if event.end_time <= current_time:
+                # Clean up expired event data
+                UserEvent.query.filter_by(event_id=event_id).delete()
+                Event.query.filter_by(id=event_id).delete()
+                db.session.commit()
+                
+                flash("This event has ended. The matches are no longer available.", 'info')
+                return redirect(url_for('home'))
+                
+            # Verify user is part of this event
+            is_participant = UserEvent.query.filter_by(
+                user_email=user_email,  # Use the stored user_email variable
+                event_id=event_id
+            ).first() is not None
+            is_host = event.host == user_email  # Use the stored user_email variable
+            
+            if not (is_participant or is_host):
+                flash("You don't have access to these matches.", 'warning')
+                return redirect(url_for('home'))
+            
+            matches = get_combined_rankings(event_id, user_email)
+            if not matches:
+                flash("No matches available at this time.", 'info')
+                return render_template('ranked_matches.html', matches=[])
+            
+            return render_template('ranked_matches.html', matches=matches)
+            
+        except Exception as e:
+            app.logger.error(f"Error in rank_matches: {str(e)}")
+            flash("An error occurred while retrieving matches. Please try again.", 'danger')
+            return redirect(url_for('home'))
