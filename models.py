@@ -39,8 +39,18 @@ class UserEvent(db.Model):
     user_email = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
 
-class UserMatches(db.Model):
-    __tablename__ = 'user_matches'
-    email_1 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
-    email_2 = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), primary_key=True)
+class UserChats(db.Model):
+    __tablename__ = 'UserChats'
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'))
+    chat_id = db.Column(db.Integer, primary_key=True)
+    email_1 = db.Column(db.String(120), db.ForeignKey('user.email'))
+    email_2 = db.Column(db.String(120), db.ForeignKey('user.email'))
+    
+class UserMessages(db.Model):
+    __tablename__ = 'UserMessages'
+    message_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    chat_id = db.Column(db.Integer, db.ForeignKey('UserChats.chat_id'), nullable=False)
+    sender = db.Column(db.String(120), db.ForeignKey('user.email'), nullable=False)
+    recipient = db.Column(db.String(120), db.ForeignKey('user.email'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    time_sent = db.Column(db.DateTime, default=db.func.now(), nullable=False)

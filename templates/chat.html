@@ -1,0 +1,236 @@
+<!-- Updated chat.html template -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+
+        .chat-header {
+            background-color: #0078d7;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .message.sent {
+            background-color: #0078d7;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message.received {
+            background-color: #e0e0e0;
+            color: black;
+            align-self: flex-start;
+        }
+
+        .message-time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .chat-input {
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background-color: #f9f9f9;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: #0078d7;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .chat-input button:hover {
+            background-color: #005bb5;
+        }
+
+        .message-error {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Chat
+        </div>
+        <div class="chat-messages" id="messageContainer">
+            <!-- Messages will be populated here -->
+        </div>
+        <div class="chat-input">
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Type your message...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+            <div class="message-error" id="messageError"></div>
+        </div>
+    </div>
+
+    <script>
+        const chatId = window.location.pathname.split('/').pop();
+        const messageContainer = document.getElementById('messageContainer');
+        const messageInput = document.getElementById('messageInput');
+        const messageError = document.getElementById('messageError');
+
+        // Load existing messages
+        async function loadMessages() {
+            try {
+                const response = await fetch(`/api/messages/${chatId}`);
+                if (!response.ok) throw new Error('Failed to load messages');
+                
+                const messages = await response.json();
+                messageContainer.innerHTML = ''; // Clear existing messages
+                
+                messages.forEach(message => {
+                    appendMessage(message);
+                });
+                
+                scrollToBottom();
+            } catch (error) {
+                showError('Failed to load messages. Please refresh the page.');
+            }
+        }
+
+        // Send new message
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            try {
+                const response = await fetch(`/api/messages/${chatId}/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                if (!response.ok) throw new Error('Failed to send message');
+                
+                const newMessage = await response.json();
+                appendMessage(newMessage);
+                messageInput.value = '';
+                scrollToBottom();
+            } catch (error) {
+                showError('Failed to send message. Please try again.');
+            }
+        }
+
+        // Append message to container
+        function appendMessage(message) {
+            const messageDiv = document.createElement('div');
+            const isCurrentUser = message.sender === '{{ session["user"] }}';
+            messageDiv.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
+            
+            messageDiv.innerHTML = `
+                ${message.body}
+                <div class="message-time">${message.time}</div>
+            `;
+            
+            messageContainer.appendChild(messageDiv);
+        }
+
+        // Show error message
+        function showError(message) {
+            messageError.textContent = message;
+            messageError.style.display = 'block';
+            setTimeout(() => {
+                messageError.style.display = 'none';
+            }, 3000);
+        }
+
+        // Scroll to bottom of message container
+        function scrollToBottom() {
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        // Handle enter key
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initial load
+        loadMessages();
+
+        // Periodic refresh (every 5 seconds)
+        setInterval(loadMessages, 5000);
+    </script>
+</body>
+</html>

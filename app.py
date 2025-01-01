@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, request, redirect, session, f
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import supabase
+from flask import jsonify
 import random
 import qrcode
 from io import BytesIO
@@ -10,12 +11,12 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime
-from models import db, User, UserResponse, Event, UserEvent, UserMatches
+from models import db, User, UserResponse, Event, UserEvent, UserChats, UserMessages
+from sqlalchemy.exc import IntegrityError
 from personality_matcher import update_ranked_matches_route
 
 
 app = Flask(__name__)
-# Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres.jgmvvjlfnqimbwoqqfam:poonambhogle@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
 app.secret_key = "SecretestKey"
 
@@ -25,9 +26,10 @@ supabase_url = "https://jgmvvjlfnqimbwoqqfam.supabase.co"
 supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZ2amxmbnFpbWJ3b3FxZmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyOTczMTEsImV4cCI6MjA1MDg3MzMxMX0.jED2-HuAoiAdY_BSqFAr2YIaHjF9eSIzdppmSCy1x7Y"  # Ensure this key is correct
 supabase_client = supabase.create_client(supabase_url, supabase_key)
 
+with app.app_context():
+    # db.drop_all() 
+    db.create_all()  
 
-
-# Routes
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -38,9 +40,8 @@ def profile():
         flash("Please log in to view your profile.", 'warning')
         return redirect(url_for('login'))
     
-    # Fetch user data from the database based on the logged-in user's email
     user_email = session['user']
-    user = User.query.filter_by(email=user_email).first()  # Query the user by email
+    user = User.query.filter_by(email=user_email).first() 
     
     if user:
         return render_template('profile.html', user=user)
@@ -53,8 +54,7 @@ def search():
     search_results = []
     if request.method == 'POST':
         query = request.form.get('query')
-        # Example logic: Find matches based on the query
-        search_results = ["Example Match 1", "Example Match 2"]  # Replace with actual logic
+        search_results = ["Example Match 1", "Example Match 2"] 
     return render_template('search.html', results=search_results)
 
 @app.route('/matches/')
@@ -69,7 +69,7 @@ def signup():
             name = request.form.get('name')
             gender = request.form.get('gender')
             dob = request.form.get('dob')
-            interests = request.form.getlist('interests[]')  # Get list of selected interests
+            interests = request.form.getlist('interests[]')
             city = request.form.get('city')
             country = request.form.get('country')
             password = request.form.get('password')
@@ -429,6 +429,139 @@ def questionnaire():
             return redirect(url_for('questionnaire'))
     
     return render_template('questionnaire.html', existing_response=existing_response)
+
+@app.route('/api/messages/<int:chat_id>', methods=['GET'])
+def get_messages(chat_id):
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+        
+    # Get the chat details to verify the user is part of this chat
+    chat = UserChats.query.filter_by(chat_id=chat_id).first()
+    if not chat or (session['user'] not in [chat.email_1, chat.email_2]):
+        return jsonify({'error': 'Unauthorized access'}), 403
+        
+    # Get all messages for this chat
+    messages = UserMessages.query.filter_by(chat_id=chat_id)\
+        .order_by(UserMessages.time_sent).all()
+        
+    messages_list = []
+    for msg in messages:
+        messages_list.append({
+            'id': msg.message_id,
+            'sender': msg.sender,
+            'body': msg.body,
+            'time': msg.time_sent.strftime('%Y-%m-%d %H:%M:%S')
+        })
+        
+    return jsonify(messages_list)
+
+@app.route('/api/messages/<int:chat_id>/send', methods=['POST'])
+def send_message(chat_id):
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+        
+    try:
+        data = request.get_json()
+        print("Received data:", data)
+        
+        if not data or 'message' not in data:
+            return jsonify({'error': 'No message provided'}), 400
+            
+        chat = UserChats.query.filter_by(chat_id=chat_id).first()
+        print("Found chat:", chat)
+        
+        sender = session['user']
+        recipient = chat.email_2 if sender == chat.email_1 else chat.email_1
+        current_time = datetime.now()
+        
+        print(f"Creating message: chat_id={chat_id}, sender={sender}, recipient={recipient}")
+        
+        new_message = UserMessages(
+            chat_id=chat_id,
+            sender=sender,
+            recipient=recipient,
+            body=data['message'],
+            time_sent=current_time
+        )
+        
+        db.session.add(new_message)
+        db.session.commit()
+        
+        response_data = {
+            'sender': sender,
+            'body': data['message'],
+            'time': current_time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        print("Sending response:", response_data)
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Exception in send_message: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
+def chat_page(chat_id):
+    return render_template('chat.html')
+
+@app.route('/create_chat/<int:event_id>/<string:matched_email>', methods=['POST'])
+def create_chat(event_id, matched_email):
+    if 'user' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user_email = session['user']
+    
+    try:
+        # Verify both users are part of the event
+        user1_in_event = UserEvent.query.filter_by(
+            user_email=user_email,
+            event_id=event_id
+        ).first()
+        user2_in_event = UserEvent.query.filter_by(
+            user_email=matched_email,
+            event_id=event_id
+        ).first()
+        
+        if not (user1_in_event and user2_in_event):
+            return jsonify({'error': 'Invalid users for this event'}), 400
+            
+        # Check if chat already exists
+        existing_chat = UserChats.query.filter(
+            UserChats.event_id == event_id,
+            ((UserChats.email_1 == user_email) & (UserChats.email_2 == matched_email)) |
+            ((UserChats.email_1 == matched_email) & (UserChats.email_2 == user_email))
+        ).first()
+        
+        if existing_chat:
+            return jsonify({'chat_id': existing_chat.chat_id}), 200
+            
+        # Fix the chat_id generation
+        max_chat_id = db.session.query(db.func.max(UserChats.chat_id)).scalar()
+        new_chat_id = (max_chat_id or 0) + 1  # Properly handle the None case
+        
+        # Create new chat
+        new_chat = UserChats(
+            event_id=event_id,
+            email_1=user_email,
+            email_2=matched_email,
+            chat_id=new_chat_id
+        )
+        
+        db.session.add(new_chat)
+        db.session.commit()
+        
+        return jsonify({'chat_id': new_chat.chat_id}), 201
+        
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create chat'}), 500
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating chat: {str(e)}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 @app.context_processor
 def utility_processor():

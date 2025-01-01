@@ -10,9 +10,7 @@ import re
 
 GOOGLE_API_KEY='AIzaSyADvYMBmX_xCw_m0IzrD0FP8SpvWXzJp4g'
 
-
-# Import models directly from app to avoid circular imports
-from models import db, User, UserResponse, Event, UserEvent, UserMatches
+from models import db, User, UserResponse, Event, UserEvent, UserChats
 def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dict) -> float:
     """
     Calculate personality similarity between two users based on their questionnaire responses

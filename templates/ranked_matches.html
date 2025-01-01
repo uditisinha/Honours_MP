@@ -7,7 +7,8 @@
     {% if matches %}
     <div class="grid gap-6">
         {% for match in matches %}
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer"
+            onclick="createChat('{{ match.user.email }}')">
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-xl font-semibold">{{ match.user.name }}</h2>
@@ -47,6 +48,34 @@
         </div>
         {% endfor %}
     </div>
+
+    <script>
+        // Store the event ID in a data attribute or variable when the page loads
+        const eventId = '{{ request.view_args.event_id }}';  // Convert to string in template
+        
+        function createChat(matchedEmail) {
+            fetch(`/create_chat/${eventId}/${matchedEmail}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.chat_id) {
+                    // Redirect to chat page
+                    window.location.href = `/chat/${data.chat_id}`;
+                } else {
+                    alert('Failed to create chat. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    </script>
+    
     {% else %}
     <p class="text-gray-600">No matches found. Complete your profile and questionnaire to get matched!</p>
     {% endif %}
