@@ -1,41 +1,104 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Join an Event</h1>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join Event</title>
-</head>
-<body>
-    <h1>Join an Event</h1>
-    <form action="/join/" method="POST">
-        <label for="code">Enter Event Code:</label><br>
-        <input type="text" id="code" name="code" placeholder="Enter event code" required><br><br>
-        <button type="submit">Join Event</button>
+    <!-- Manual Code Entry Form -->
+    <form action="/join/" method="POST" class="mb-8">
+        <div class="mb-4">
+            <label for="code" class="block text-gray-700 mb-2">Enter Event Code:</label>
+            <input type="text" id="code" name="code" placeholder="Enter event code" required
+                   class="w-full px-3 py-2 border rounded-lg shadow-sm">
+        </div>
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Join Event
+        </button>
     </form>
-    <p><a href="/">Back to Home</a></p>
+
+    <!-- QR Scanner Section -->
+    <div class="mb-8">
+        <button id="openCamera" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4">
+            Open Camera to Scan QR
+        </button>
+        <div id="qr-reader" class="hidden mb-4" style="max-width: 600px"></div>
+        <p id="qr-result" class="text-gray-700"></p>
+    </div>
+
+    <p class="mb-8">
+        <a href="/" class="text-blue-500 hover:underline">Back to Home</a>
+    </p>
+
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <ul>
+            <ul class="mb-8">
                 {% for category, message in messages %}
-                    <li style="color: {{ 'green' if category == 'success' else 'red' }};">{{ message }}</li>
+                    <li class="{{ 'text-green-500' if category == 'success' else 'text-red-500' }}">
+                        {{ message }}
+                    </li>
                 {% endfor %}
             </ul>
         {% endif %}
     {% endwith %}
 
+    <!-- Event Users List -->
     {% if event_users %}
-    <h2>Users in this Event:</h2>
-    <ul>
-        {% for user in event_users %}
-        <li>{{ user.email }}</li>
-        {% endfor %}
-    </ul>
+    <div class="mt-8">
+        <h2 class="text-xl font-semibold mb-4">Users in this Event:</h2>
+        <ul class="list-disc pl-5">
+            {% for user in event_users %}
+            <li class="text-gray-700">{{ user.email }}</li>
+            {% endfor %}
+        </ul>
+    </div>
     {% endif %}
-</body>
-</html>
 
+    <!-- Include HTML5-QRCode library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let html5QrcodeScanner = null;
+            const qrReader = document.getElementById('qr-reader');
+            const codeInput = document.getElementById('code');
+
+            document.getElementById('openCamera').addEventListener('click', function() {
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.clear();
+                }
+                
+                qrReader.classList.remove('hidden');
+                
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader", 
+                    { 
+                        fps: 10,
+                        qrbox: 250,
+                        aspectRatio: 1.0
+                    }
+                );
+
+                function onScanSuccess(decodedText) {
+                    // Stop scanning
+                    html5QrcodeScanner.clear();
+                    qrReader.classList.add('hidden');
+                    
+                    // Set the code in the input field
+                    codeInput.value = decodedText;
+                    
+                    // Optionally submit the form automatically
+                    document.querySelector('form').submit();
+                }
+
+                function onScanError(error) {
+                    // Handle scan error if needed
+                    console.warn(error);
+                }
+
+                html5QrcodeScanner.render(onScanSuccess, onScanError);
+            });
+        });
+    </script>
+</div>
 {% endblock %}

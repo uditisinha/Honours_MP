@@ -57,10 +57,39 @@ def search():
         search_results = ["Example Match 1", "Example Match 2"] 
     return render_template('search.html', results=search_results)
 
-@app.route('/matches/')
-def matches():
-    matched_people = ["Alice", "Bob", "Charlie"]
-    return render_template('matches.html', matches=matched_people)
+def get_user_chats(user_email):
+    """
+    Fetch all chats where the requesting user is involved either as email_1 or email_2
+    """
+    chats = UserChats.query.filter(
+        db.or_(
+            UserChats.email_1 == user_email,
+            UserChats.email_2 == user_email
+        )
+    ).join(
+        Event,
+        Event.id == UserChats.event_id
+    ).add_columns(
+        UserChats.chat_id,
+        UserChats.email_1,
+        UserChats.email_2,
+        Event.name.label('event_name'),
+        Event.code.label('event_code')
+    ).all()
+    
+    return chats
+
+@app.route('/chats')
+def chat_list():
+    # Get user email from session - adjust this based on your session management
+    user_email = session['user']
+    
+    # Redirect if not logged in
+    if not user_email:
+        return redirect(url_for('login'))
+        
+    chats = get_user_chats(user_email)
+    return render_template('chat_list.html', chats=chats, user_email=user_email)
 
 @app.route('/signup/', methods=['GET', 'POST'])
 def signup():

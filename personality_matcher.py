@@ -205,7 +205,7 @@ def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
         profile_score = next((s['score'] for s in profile_scores if s['user'].email == user.email), 0)
         personality_score = next((s['score'] for s in personality_scores if s['user'].email == user.email), 0)
         
-        combined_score = (profile_score * 0.3 + personality_score * 0.7)
+        combined_score = (profile_score * 0.4 + personality_score * 0.6)
         combined_scores.append({
             'user': user,
             'score': combined_score,
