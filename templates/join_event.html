@@ -1,33 +1,108 @@
+<head>
+    <style>
+        .button{
+            padding: 1.5vh;
+            margin: 1vh;
+            border-radius: 10px;
+            width: 50%;
+            margin: auto;
+            text-align: center;
+            margin-bottom: 2vh;
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+        }
+        .button:hover{
+            background-image: linear-gradient(to right, #80760f, #89720e, #926e11, #9a6a16, #a1651c);
+        }
+    .footer {
+      margin-top: auto;
+    }
+        .button a{
+            text-decoration: none;
+            color: black
+            margin: auto;
+            font-size: 2.5vh;
+        }
+        a{
+            color: black;
+        }
+        .buttonclass{
+            margin-top: 5vh;
+            justify-content: center;
+        }
+        label{
+            margin-top: 1vh;
+            font-size: 3vh;
+            font-weight:500;
+        }
+        .joinevent{
+            justify-content: center;
+            border-radius: 10px;
+            padding: 3vh;
+            padding-bottom: 2vh;
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+        }
+        .joinevent input{
+            padding: 2vh;
+            width: 100%;
+            margin-top: 1vh;
+            border-style: solid;
+            border-color: black;
+            border-width: 1px;
+            border-radius: 5px;
+        }
+        .joinevent button{
+            padding: 1.5vh;
+            width: 100%;
+            margin-top: 3vh;
+            border-style: solid;
+            margin-bottom: 0;
+            border-color: black;
+            border-width: 1px;
+            border-radius: 5px;
+            color: white;
+            font-size: 2.5vh;
+            background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
+        }
+        .joinevent button:hover{
+            background-image: linear-gradient(to right, #572251, #491f51, #3a1d4f, #291b4d, #14194a);
+        }
+        h1{
+            text-align: center;
+        }
+    </style>
+</head>
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">Join an Event</h1>
-
-    <!-- Manual Code Entry Form -->
-    <form action="/join/" method="POST" class="mb-8">
-        <div class="mb-4">
-            <label for="code" class="block text-gray-700 mb-2">Enter Event Code:</label>
-            <input type="text" id="code" name="code" placeholder="Enter event code" required
-                   class="w-full px-3 py-2 border rounded-lg shadow-sm">
-        </div>
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Join Event
-        </button>
-    </form>
-
+<body>
+    
+<div>
     <!-- QR Scanner Section -->
-    <div class="mb-8">
-        <button id="openCamera" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4">
-            Open Camera to Scan QR
-        </button>
+    <div>
+        <div class="buttonclass">
+        <div class="button">
+            <class id="openCamera">
+                Open Camera to Scan QR
+            </class>
+        </div>
         <div id="qr-reader" class="hidden mb-4" style="max-width: 600px"></div>
         <p id="qr-result" class="text-gray-700"></p>
     </div>
 
-    <p class="mb-8">
-        <a href="/" class="text-blue-500 hover:underline">Back to Home</a>
-    </p>
+    <h1>OR</h1>
+
+    <!-- Manual Code Entry Form -->
+    <div class="joinevent">
+        <form action="/join/" method="POST" class="mb-8">
+            <div>
+                <label for="code">Enter Event Code:</label>
+                <input type="text" id="code" name="code" placeholder="Enter event code" required>
+            </div>
+            <button type="submit">
+                Join Event
+            </button>
+        </form>
+    </div>
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -102,3 +177,4 @@
     </script>
 </div>
 {% endblock %}
+</body>

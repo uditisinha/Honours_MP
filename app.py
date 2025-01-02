@@ -164,15 +164,8 @@ def login():
         
         session['user'] = user.email
         flash("Login successful!", 'success')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('home'))
     return render_template('login.html')
-
-@app.route('/dashboard/')
-def dashboard():
-    if 'user' not in session:
-        flash("Please log in to access the dashboard.", 'warning')
-        return redirect(url_for('login'))
-    return render_template('dashboard.html', user=session['user'])
 
 @app.route('/logout/')
 def logout():
@@ -192,6 +185,7 @@ def eventPage():
     # Check if user has any active events
     active_event = None
     is_host = False
+    host_name = None
     
     # Check if user is hosting any active events
     hosted_event = Event.query.filter_by(
@@ -201,6 +195,7 @@ def eventPage():
     if hosted_event:
         active_event = hosted_event
         is_host = True
+        host_name = User.query.filter_by(email=hosted_event.host).first().name
     else:
         # Check if user is participating in any active events
         participating_event = db.session.query(Event).join(UserEvent).filter(
@@ -209,6 +204,7 @@ def eventPage():
         ).first()
         if participating_event:
             active_event = participating_event
+            host_name = User.query.filter_by(email=participating_event.host).first().name
     
     has_active_event = active_event is not None
     
@@ -216,6 +212,7 @@ def eventPage():
                          has_active_event=has_active_event,
                          active_event=active_event,
                          active_event_name=active_event.name if active_event else None,
+                         host_name=host_name,
                          is_host=is_host)
 
 @app.route('/leave_event', methods=['POST'])
@@ -355,7 +352,7 @@ def host_event():
     if has_active_event:
         flash(f"You are already part of an active event: {active_event_name}. "
               "Please wait until it ends before hosting another event.", 'warning')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('home'))
 
     if request.method == 'POST':
         try:
@@ -461,7 +458,7 @@ def join_event():
     if has_active_event:
         flash(f"You are already part of an active event: {active_event_name}. "
               "Please wait until it ends before joining another event.", 'warning')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('home'))
 
     event_users = []
     if request.method == 'POST':

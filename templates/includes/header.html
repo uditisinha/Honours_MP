@@ -1,14 +1,17 @@
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&family=Mochiy+Pop+One&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  </head>
+  
 <style>
   .header {
-    background-color: #333;
-    padding: 10px 20px;
-    color: white;
+    background-color: #1e267100;
   }
 
   .navbar {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
   }
 
   .nav-links {
@@ -16,36 +19,78 @@
     display: flex;
     margin: 0;
     padding: 0;
+    width: 100%;
   }
 
   .nav-links li {
-    margin-right: 20px;
-  }
-
-  .nav-links li:last-child {
-    margin-right: 0;
+    padding: 0;
+    font-size: 2vh;
+    margin: 0;
+    margin: 2vh;
   }
 
   .nav-links a {
     text-decoration: none;
-    color: white;
-    font-weight: bold;
+    color: black;
     transition: color 0.3s ease;
   }
 
   .nav-links a:hover {
-    color: #ff9800;
+    color: white;
   }
+
+  .left-links {
+    display: flex;
+  }
+
+  .right-links {
+    display: flex;
+    margin-left: auto;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  hr {
+    border: none; /* Remove any default border styles */
+    background-color: black; /* Set the line color */
+    height: 1px; /* Set the line thickness */
+    width: 90%; /* Set the line to stretch across the full width */
+    margin: 0; /* Remove default margin */
+    padding: 0; /* Remove any padding */
+    margin: auto;
+  }
+
+  body {
+    font-family: 'Quicksand', sans-serif;
+    background-image: linear-gradient(to right bottom, #c03763, #af3169, #9c2f6e, #882d70, #722d70, #652c70, #582b6f, #4a2a6d, #42296e, #38286f, #2d2770, #1e2671);  }
 </style>
 
 <header class="header">
   <nav class="navbar">
     <ul class="nav-links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/event/">Event</a></li>
-      <li><a href="/profile/">Profile</a></li>
-      <li><a href="/chats">Your chats</a></li>
-      <li><a href="/logout/">Logout</a></li>
+      <div class="left-links">
+        <li><a href="/">Home</a></li>
+        {% if 'user' in session %}
+          <li><a href="/event/">Event</a></li>
+          <li><a href="/chats">Chats</a></li>
+        {% endif %}
+      </div>
+      
+      <div class="right-links">
+        {% if 'user' in session %}
+          <li><a href="/profile/">Profile</a></li>
+          <li><a href="/logout/">Logout</a></li>
+        {% else %}
+          <li><a href="/login/">Login</a></li>
+          <li><a href="/signup/">Signup</a></li>
+        {% endif %}
+      </div>
     </ul>
   </nav>
+  <hr>
 </header>

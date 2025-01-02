@@ -31,6 +31,10 @@
         }
     </style>
 </head>
+
+{% extends "base.html" %}
+
+{% block content %}
 <body>
     <form method="post">
         <label for="email">Email:</label>
@@ -118,4 +122,6 @@
         });
     </script>
 </body>
+
+{% endblock %}
 </html>

@@ -1,7 +1,70 @@
-<form method="post">
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required>
-    <button type="submit">Sign Up</button>
-</form>
+
+<head>
+    <style>
+        .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10vh;
+}
+
+.login-box {
+    background: linear-gradient(to bottom, #ffcc00, #ff6600);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    width: 300px;
+}
+
+.login-box form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-box label {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.login-box input {
+    margin-bottom: 15px;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+}
+
+.login-box button {
+    background: linear-gradient(to right, #6600ff, #ff0099);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.login-box button:hover {
+    opacity: 0.9;
+}
+    </style>
+</head>
+{% extends "base.html" %}
+
+{% block content %}
+
+<body>
+
+<div class="login-container">
+    <div class="login-box">
+        <form method="post">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Log in</button>
+        </form>
+    </div>
+</div>
+</body>
+
+{% endblock %}

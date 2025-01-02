@@ -6,9 +6,41 @@
 <html>
 <head>
     <title>Host Event</title>
+    <style>
+        .eventdetailsform{
+            padding: 3vh;
+            border-radius: 10px;
+            background-image: linear-gradient(to right bottom, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);        
+        }
+        .eventdetailsform input{
+            width: 90%;
+            border-style: solid;
+            border-width: 1px;
+            border-color: black;
+            padding: 1vh;
+            border-radius: 5px;
+            margin-bottom: 2vh;
+        }
+        label{
+            font-size: 2.5vh;
+            padding-bottom: 1vh;
+        }
+        button{
+            background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
+            border-style: solid;
+            border-width: 1px;
+            border-color: black;
+            color: white;
+            padding: 1.5vh;
+            border-radius: 5px;
+            font-size: 2vh;
+            display: block;  /* Added this */
+            margin: 0 auto;  /* Added this */
+            width: 60%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Host a New Event</h1>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -18,26 +50,26 @@
         {% endif %}
     {% endwith %}
 
+    <div class="eventdetailsform">
     <form method="post">
         <div>
-            <label for="name">Event Name:</label>
+            <label for="name">Event Name:</label><br>
             <input type="text" id="name" name="name" required>
         </div>
 
         <div>
-            <label for="start_time">Start Time:</label>
+            <label for="start_time">Start Time:</label><br>
             <input type="datetime-local" id="start_time" name="start_time" required>
         </div>
 
         <div>
-            <label for="end_time">End Time:</label>
+            <label for="end_time">End Time:</label><br>
             <input type="datetime-local" id="end_time" name="end_time" required>
         </div>
 
         <button type="submit">Create Event</button>
     </form>
+    </div>
 </body>
 </html>
-
-
 {% endblock %}
