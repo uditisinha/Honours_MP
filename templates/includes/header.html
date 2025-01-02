@@ -42,14 +42,9 @@
   <nav class="navbar">
     <ul class="nav-links">
       <li><a href="/">Home</a></li>
+      <li><a href="/event/">Event</a></li>
       <li><a href="/profile/">Profile</a></li>
-      <li><a href="/join/">Join Event</a></li>
-      <li><a href="/host/">Host Event</a></li>
-      <li><a href="/questionnaire/">Questions</a></li>
       <li><a href="/chats">Your chats</a></li>
-      {% if get_active_event_id() %}
-      <li><a href="{{ url_for('rank_matches', event_id=get_active_event_id()) }}">Ranked Matches</a></li>
-      {% endif %}
       <li><a href="/logout/">Logout</a></li>
     </ul>
   </nav>

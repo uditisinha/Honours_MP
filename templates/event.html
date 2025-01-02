@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Event Page</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if not has_active_event %}
+        <div class="button-group">
+            <a href="{{ url_for('join_event') }}" class="btn btn-primary">Join Event</a>
+            <a href="{{ url_for('host_event') }}" class="btn btn-success">Host Event</a>
+        </div>
+    {% else %}
+        <div class="event-info">
+            <h3>Current Active Event: {{ active_event_name }}</h3>
+            {% if not is_host %}
+                <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="event_id" value="{{ active_event.id }}">
+                    <button type="submit" class="btn btn-danger">Leave Event</button>
+                </form>
+            {% endif %}
+            {% if active_event %}
+                <a href="{{ url_for('rank_matches', event_id=active_event.id) }}" class="btn btn-primary">Ranked Matches</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

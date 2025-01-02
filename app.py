@@ -26,9 +26,9 @@ supabase_url = "https://jgmvvjlfnqimbwoqqfam.supabase.co"
 supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZ2amxmbnFpbWJ3b3FxZmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyOTczMTEsImV4cCI6MjA1MDg3MzMxMX0.jED2-HuAoiAdY_BSqFAr2YIaHjF9eSIzdppmSCy1x7Y"  # Ensure this key is correct
 supabase_client = supabase.create_client(supabase_url, supabase_key)
 
-with app.app_context():
-    # db.drop_all() 
-    db.create_all()  
+# with app.app_context():
+#     db.drop_all() 
+#     db.create_all()  
 
 @app.route('/')
 def home():
@@ -81,6 +81,9 @@ def get_user_chats(user_email):
 
 @app.route('/chats')
 def chat_list():
+    if 'user' not in session:
+        flash("Please log in to view your profile.", 'warning')
+        return redirect(url_for('login'))
     # Get user email from session - adjust this based on your session management
     user_email = session['user']
     
@@ -176,6 +179,83 @@ def logout():
     session.pop('user', None)
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
+
+@app.route('/event/')
+def eventPage():
+    if 'user' not in session:
+        flash("Please log in to access events.", 'warning')
+        return redirect(url_for('login'))
+    
+    current_time = datetime.now()
+    user_email = session['user']
+    
+    # Check if user has any active events
+    active_event = None
+    is_host = False
+    
+    # Check if user is hosting any active events
+    hosted_event = Event.query.filter_by(
+        host=user_email
+    ).filter(Event.end_time > current_time).first()
+    
+    if hosted_event:
+        active_event = hosted_event
+        is_host = True
+    else:
+        # Check if user is participating in any active events
+        participating_event = db.session.query(Event).join(UserEvent).filter(
+            UserEvent.user_email == user_email,
+            Event.end_time > current_time
+        ).first()
+        if participating_event:
+            active_event = participating_event
+    
+    has_active_event = active_event is not None
+    
+    return render_template('event.html',
+                         has_active_event=has_active_event,
+                         active_event=active_event,
+                         active_event_name=active_event.name if active_event else None,
+                         is_host=is_host)
+
+@app.route('/leave_event', methods=['POST'])
+def leave_event():
+    if 'user' not in session:
+        flash("Please log in to leave an event.", 'warning')
+        return redirect(url_for('login'))
+    
+    user_email = session['user']
+    event_id = request.form.get('event_id')
+    
+    if not event_id:
+        flash("Invalid request.", 'danger')
+        return redirect(url_for('eventPage'))
+    
+    try:
+        # Check if user is a host
+        event = Event.query.filter_by(id=event_id).first()
+        if event and event.host == user_email:
+            flash("Event hosts cannot leave their own event.", 'danger')
+            return redirect(url_for('eventPage'))
+        
+        # Delete the user's event association
+        user_event = UserEvent.query.filter_by(
+            user_email=user_email,
+            event_id=event_id
+        ).first()
+        
+        if user_event:
+            db.session.delete(user_event)
+            db.session.commit()
+            flash("You have successfully left the event.", 'success')
+        else:
+            flash("You are not part of this event.", 'warning')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error leaving event: {str(e)}", 'danger')
+    
+    return redirect(url_for('eventPage'))
 
 @app.route('/edit_profile/', methods=['GET', 'POST'])
 def edit_profile():
@@ -534,12 +614,15 @@ def send_message(chat_id):
 
 @app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
 def chat_page(chat_id):
+    if 'user' not in session:
+        flash("Please log in to view your profile.", 'warning')
+        return redirect(url_for('login'))
     return render_template('chat.html')
 
 @app.route('/create_chat/<int:event_id>/<string:matched_email>', methods=['POST'])
 def create_chat(event_id, matched_email):
     if 'user' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
+        return redirect(url_for('login'))
     
     user_email = session['user']
     
