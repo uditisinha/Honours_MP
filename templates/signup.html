@@ -81,6 +81,25 @@
         .login-box button:hover {
             opacity: 0.9;
         }
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
+        }
     </style>
 </head>
 
@@ -88,6 +107,11 @@
 
 {% block content %}
 <body>
+    <div class="top">
+        <div class="topic">Sign up</div>
+        <img src="../static/images/logo_big.png">
+    </div>
+
 <div class="login-container">
     <div class="login-box">
     <form method="post">

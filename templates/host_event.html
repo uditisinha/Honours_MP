@@ -37,18 +37,32 @@
             display: block;  /* Added this */
             margin: 0 auto;  /* Added this */
             width: 60%;
+        }        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
         }
     </style>
 </head>
 <body>
     
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    <div class="top">
+        <div class="topic">Host event</div>
+    </div>
 
     <div class="eventdetailsform">
     <form method="post">

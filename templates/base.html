@@ -24,6 +24,75 @@
     .footer {
       margin-top: auto;
     }
+
+    /* Alert Styles */
+    .alert {
+      padding: 15px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      position: fixed;
+      top: 20px;
+      margin-bottom: 20px;
+      min-width: 250px;
+      max-width: 350px;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.5s ease-out;
+    }
+
+    .alert-success {
+      color: #155724;
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+
+    .alert-danger {
+      color: #721c24;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+
+    .alert-warning {
+      color: #856404;
+      background-color: #fff3cd;
+      border-color: #ffeeba;
+    }
+
+    .alert-info {
+      color: #0c5460;
+      background-color: #d1ecf1;
+      border-color: #bee5eb;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    .fade-out {
+      animation: fadeOut 0.5s ease-out forwards;
+    }
+    .centrethis{
+      margin: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -31,6 +100,16 @@
   
   <div class="mainContainer">
     <div class="blockContent">
+      <div class="centrethis">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+          {% for category, message in messages %}
+              <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+          {% endfor %}
+      {% endif %}
+      {% endwith %}
+      </div>
+
       {% block content %}
         {# Template inserted here #}
       {% endblock %}
@@ -38,5 +117,31 @@
   </div>
 
   {% include "includes/footer.html" %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const alerts = document.querySelectorAll('.alert');
+      
+      alerts.forEach(alert => {
+        // Set timeout to start fade out
+        setTimeout(() => {
+          alert.classList.add('fade-out');
+        }, 3000); // Start fading after 3 seconds
+
+        // Remove alert after animation completes
+        setTimeout(() => {
+          alert.remove();
+        }, 3500); // Remove after 3.5 seconds (giving time for fade animation)
+
+        // Optional: Allow clicking to dismiss alert immediately
+        alert.addEventListener('click', () => {
+          alert.classList.add('fade-out');
+          setTimeout(() => {
+            alert.remove();
+          }, 500);
+        });
+      });
+    });
+  </script>
 </body>
 </html>

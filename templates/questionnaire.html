@@ -51,14 +51,6 @@
             transform: scale(1.02);
             background: linear-gradient(to right, #FFA500, #FFD700);
         }
-
-        .alert {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
         /* Remove the Bootstrap validation styles */
         .was-validated .form-control:invalid,
         .form-control.is-invalid {
@@ -77,14 +69,6 @@
 
 {% block content %}
 <div class="container">
-    
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
     
     <form method="POST" class="needs-validation" novalidate>
         <div>

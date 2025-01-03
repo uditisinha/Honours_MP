@@ -13,7 +13,7 @@ class User(db.Model):
     city = db.Column(db.String(120), nullable=False)
     country = db.Column(db.String(120), nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    avatar = db.Column(db.String(256), nullable=True)  # URL or path to the user's avatar image
+    avatar = db.Column(db.String(256), nullable=True) 
     bio = db.Column(db.Text, nullable=True)  # Short biography or description
 
 class UserResponse(db.Model):
@@ -35,6 +35,7 @@ class Event(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     host = db.Column(db.String(120), nullable=False)
+    qr = db.Column(db.String(256), nullable=True) 
 
 class UserEvent(db.Model):
     __tablename__ = 'user_event'

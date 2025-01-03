@@ -213,6 +213,7 @@ def logout():
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
 
+# Route file
 @app.route('/event/')
 def eventPage():
     if 'user' not in session:
@@ -457,26 +458,31 @@ def host_event():
                 if not Event.query.filter_by(code=code).first():
                     break
 
+            # Create QR code directory if it doesn't exist
+            qr_dir = os.path.join(app.static_folder, 'qr_codes')
+            os.makedirs(qr_dir, exist_ok=True)
+
+            # Generate and save QR code
+            qr = qrcode.make(code)
+            qr_filename = f"qr_{code}_{secure_filename(name)}.png"
+            qr_path = os.path.join(qr_dir, qr_filename)
+            qr.save(qr_path)
+
             # Create new event
             event = Event(
                 name=name,
                 code=code,
                 start_time=start_time,
                 end_time=end_time,
-                host=session['user']
+                host=session['user'],
+                qr=qr_filename  # Store just the filename
             )
 
             db.session.add(event)
             db.session.commit()
 
-            # Generate QR code
-            qr = qrcode.make(code)
-            buffer = BytesIO()
-            qr.save(buffer)
-            buffer.seek(0)
-
             flash(f"Event '{name}' created successfully! Code: {code}", 'success')
-            return send_file(buffer, mimetype="image/png", as_attachment=True, download_name="event_qr.png")
+            return redirect(url_for('eventPage'))  # Redirect to event page
 
         except ValueError as e:
             flash("Invalid date/time format. Please use the datetime picker.", 'danger')
@@ -724,7 +730,12 @@ def create_chat(event_id, matched_email):
             user_email=matched_email,
             event_id=event_id
         ).first()
-        
+        print(user1_in_event)
+        user1_in_event = UserEvent.query.filter_by(user_email=user_email, event_id=event_id).first()
+        user2_in_event = UserEvent.query.filter_by(user_email=matched_email, event_id=event_id).first()
+
+        app.logger.info(f"User 1: {user1_in_event}, User 2: {user2_in_event}")
+
         if not (user1_in_event and user2_in_event):
             return jsonify({'error': 'Invalid users for this event'}), 400
             
@@ -749,7 +760,6 @@ def create_chat(event_id, matched_email):
             email_2=matched_email,
             chat_id=new_chat_id
         )
-        
         db.session.add(new_chat)
         db.session.commit()
         

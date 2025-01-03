@@ -1,6 +1,7 @@
 <head>
     <style>
         .profile-container {
+            margin-top: 35px;
             color: white;
         }
 
@@ -62,12 +63,34 @@
             text-decoration: none;
             color: black;
         }
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
+        }
     </style>
 </head>
 {% extends "base.html" %}
 
 {% block content %}
 
+<div class="top">
+    <div class="topic">Your profile</div>
+</div>
 <div class="profile-container">
     <!-- Profile Image -->
     <div class="profile-image">

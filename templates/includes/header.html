@@ -31,12 +31,13 @@
 
   .nav-links a {
     text-decoration: none;
-    color: black;
+    color: rgb(206, 206, 206);
     transition: color 0.3s ease;
+    font-weight: bold;
   }
 
   .nav-links a:hover {
-    color: white;
+    color: rgb(0, 0, 0);
   }
 
   .left-links {
@@ -46,11 +47,13 @@
   .right-links {
     display: flex;
     margin-left: auto;
+    margin-top: 1vh;
+    margin-bottom: 1vh;
   }
 
   hr {
     border: none; /* Remove any default border styles */
-    background-color: black; /* Set the line color */
+    background-color: rgb(206, 206, 206); /* Set the line color */
     height: 1px; /* Set the line thickness */
     width: 90%; /* Set the line to stretch across the full width */
     margin: 0; /* Remove default margin */
@@ -72,16 +75,30 @@
         background-attachment: fixed;
         background-size: cover;
     }
+
+    .left-links img{
+      height: 4.5vh;
+      padding: 0;
+      margin: 0;
+    }
+
+    .killme{
+      display: flex;
+      margin-top: 1vh;
+      margin-bottom: 1vh;
+    }
 </style>
 
 <header class="header">
   <nav class="navbar">
     <ul class="nav-links">
       <div class="left-links">
-        <li><a href="/">Home</a></li>
+        <li><a href="/"> <img src="../../static/images/icon.png"> </a></li>
         {% if 'user' in session %}
+        <div class="killme">
           <li><a href="/event/">Event</a></li>
           <li><a href="/chats">Chats</a></li>
+        </div>
         {% endif %}
       </div>
       

@@ -68,6 +68,25 @@
         }
         h1{
             text-align: center;
+        }        
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
         }
     </style>
 </head>
@@ -77,6 +96,9 @@
 <body>
     
 <div>
+    <div class="top">
+        <div class="topic">Join event</div>
+    </div>
     <!-- QR Scanner Section -->
     <div>
         <div class="buttonclass">
@@ -103,19 +125,6 @@
             </button>
         </form>
     </div>
-
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul class="mb-8">
-                {% for category, message in messages %}
-                    <li class="{{ 'text-green-500' if category == 'success' else 'text-red-500' }}">
-                        {{ message }}
-                    </li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
 
     <!-- Include HTML5-QRCode library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>

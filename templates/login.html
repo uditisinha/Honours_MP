@@ -2,50 +2,68 @@
 <head>
     <style>
         .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 10vh;
-}
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-.login-box {
-    background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    width: 300px;
-}
+        .login-box {
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
 
-.login-box form {
-    display: flex;
-    flex-direction: column;
-}
+        .login-box form {
+            display: flex;
+            flex-direction: column;
+        }
 
-.login-box label {
-    margin-bottom: 5px;
-    font-size: 14px;
-}
+        .login-box label {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
 
-.login-box input {
-    margin-bottom: 15px;
-    padding: 8px;
-    border: none;
-    border-radius: 5px;
-}
+        .login-box input {
+            margin-bottom: 15px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
 
-.login-box button {
-    background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
-    color: white;
-    border: none;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-}
+        .login-box button {
+            background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
 
-.login-box button:hover {
-    opacity: 0.9;
-}
+        .login-box button:hover {
+            opacity: 0.9;
+        }
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
+        }
     </style>
 </head>
 {% extends "base.html" %}
@@ -53,6 +71,11 @@
 {% block content %}
 
 <body>
+
+    <div class="top">
+        <div class="topic">Login</div>
+        <img src="../static/images/logo_big.png">
+    </div>
 
 <div class="login-container">
     <div class="login-box">

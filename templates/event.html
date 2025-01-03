@@ -26,7 +26,7 @@
             justify-content: center;
             margin-top: 2vh;
         }
-        h2{
+        .buttonclass h2{
             text-align: center;
             font-size: 3vh;
             color: white;
@@ -68,6 +68,34 @@
             margin-bottom: 2vh;
             background-image: linear-gradient(to right, #c47c25, #c16a25, #bb5728, #b4442b, #ab312f);
         }
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
+        }
+        .toppart{
+            margin: auto;
+            align-items: center;
+            text-align: center;
+            color: white;
+        }
+        .toppart img{
+            border-radius: 10px;
+        }
     </style>
 </head>
 {% extends "base.html" %}
@@ -75,13 +103,9 @@
 {% block content %}
 <div class="container">
     
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    <div class="top">
+        <div class="topic">Event</div>
+    </div>
 
     {% if not has_active_event %}
     <div class="buttonclass">
@@ -92,19 +116,32 @@
             </div>
         </div>
         <div class="joinhost">
-        <h2>Host an event and bring people together effortlessly.</h2>
+            <h2>Host an event and bring people together effortlessly.</h2>
             <div class="button">
                 <a href="{{ url_for('host_event') }}">Host event</a>
             </div>
         </div>
     </div>
-    {% else %}
+    {% else %}            
+        {% if is_host %}
+        <div class="toppart">
+        <div class="host-info">
+            <h3>Event QR Code:</h3>
+            <div class="qr-code">
+                <a href="{{ url_for('static', filename='qr_codes/' + active_event.qr) }}" download class="btn btn-secondary mt-2"><img src="{{ url_for('static', filename='qr_codes/' + active_event.qr) }}" alt="Event QR Code" class="qr-image"></a> 
+            </div>
+            <h1>OR</h1>
+            <h3>Event Code:</h3>
+            <p class="event-code">{{ active_event.code }}</p>
+        </div>
+        {% endif %}
         <div class="event-info">
             <h3>Name of the event:</h3>
-            <p> {{ active_event_name }}</p>
-            <h3>
-                Host of the event:
-            </h3><p> {{ host_name }}</p>
+            <p>{{ active_event_name }}</p>
+            <h3>Host of the event:</h3>
+            <p>{{ host_name }}</p>
+
+            {% if not is_host %}
             {% if active_event %}
             <div class="buttonclass">
                 <div class="button">
@@ -112,13 +149,13 @@
                 </div>
             </div>
             {% endif %}
-            {% if not is_host %}
-                    <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
-                        <input type="hidden" name="event_id" value="{{ active_event.id }}">
-                        <button type="submit" class="btn btn-danger">Leave Event</button>
-                    </form>
-            {% endif %}
             
+                <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="event_id" value="{{ active_event.id }}">
+                    <button type="submit" class="btn btn-danger">Leave Event</button>
+                </form>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
 {% endblock %}
