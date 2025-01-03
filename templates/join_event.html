@@ -117,18 +117,6 @@
         {% endif %}
     {% endwith %}
 
-    <!-- Event Users List -->
-    {% if event_users %}
-    <div class="mt-8">
-        <h2 class="text-xl font-semibold mb-4">Users in this Event:</h2>
-        <ul class="list-disc pl-5">
-            {% for user in event_users %}
-            <li class="text-gray-700">{{ user.email }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-
     <!-- Include HTML5-QRCode library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
     

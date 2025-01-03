@@ -26,8 +26,60 @@
         
         .interest-tag.selected {
             background-color: #e0e7ff;
-            border-color: #818cf8;
-            color: #4f46e5;
+            border-color: #4f0022;
+            color: #c10958;
+        }  
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 3vh;
+        }
+
+        .login-box {
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+
+        .login-box form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .login-box label {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .login-box input {
+            margin-bottom: 15px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        select{
+            margin-bottom: 15px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .login-box button {
+            background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .login-box button:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -36,6 +88,8 @@
 
 {% block content %}
 <body>
+<div class="login-container">
+    <div class="login-box">
     <form method="post">
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required>
@@ -110,6 +164,8 @@
 
         <button type="submit">Sign Up</button>
     </form>
+</div>
+</div>
 
     <script>
         // Add click handling for interest tags

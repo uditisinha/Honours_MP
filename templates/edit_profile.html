@@ -1,13 +1,217 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Edit Profile</h2>
+<div class="login-container">
+    <div class="login-box">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="avatar-section">
+                <img src="{{ user.avatar if user.avatar else url_for('static', filename='images/user.png') }}" 
+                     alt="Profile Picture" 
+                     class="current-avatar">
+                <div class="avatar-upload">
+                    <label for="avatar">Change Profile Picture:</label>
+                    <input type="file" id="avatar" name="avatar" accept="image/*">
+                </div>
+            </div>
 
-<form method="POST">
-    <label for="email">New Email:</label>
-    <input type="email" name="email" id="email" value="{{ user.email }}" required>
+            <label for="email">Email:</label>
+            <input type="email" name="email" id="email" value="{{ user.email }}" required>
 
-    <button type="submit">Update Profile</button>
-</form>
+            <label for="name">Name:</label>
+            <input type="text" name="name" id="name" value="{{ user.name }}" required>
 
+            <label for="bio">Bio:</label>
+            <textarea id="bio" name="bio" rows="4">{{ user.bio }}</textarea>
+
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="Male" {% if user.gender == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Female" {% if user.gender == 'Female' %}selected{% endif %}>Female</option>
+                <option value="Other" {% if user.gender == 'Other' %}selected{% endif %}>Other</option>
+            </select>
+
+            <label for="dob">Date of Birth:</label>
+            <input type="date" id="dob" name="dob" value="{{ user.dob.strftime('%Y-%m-%d') }}" required>
+
+            <label>Interests:</label>
+            <div class="interests-container">
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Reading" {% if 'Reading' in user.interests %}checked{% endif %}>
+                    Reading
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Travel" {% if 'Travel' in user.interests %}checked{% endif %}>
+                    Travel
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Music" {% if 'Music' in user.interests %}checked{% endif %}>
+                    Music
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Sports" {% if 'Sports' in user.interests %}checked{% endif %}>
+                    Sports
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Cooking" {% if 'Cooking' in user.interests %}checked{% endif %}>
+                    Cooking
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Photography" {% if 'Photography' in user.interests %}checked{% endif %}>
+                    Photography
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Art" {% if 'Art' in user.interests %}checked{% endif %}>
+                    Art
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Gaming" {% if 'Gaming' in user.interests %}checked{% endif %}>
+                    Gaming
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Movies" {% if 'Movies' in user.interests %}checked{% endif %}>
+                    Movies
+                </label>
+                <label class="interest-tag">
+                    <input type="checkbox" name="interests[]" value="Technology" {% if 'Technology' in user.interests %}checked{% endif %}>
+                    Technology
+                </label>
+            </div>
+
+            <label for="city">City:</label>
+            <input type="text" id="city" name="city" value="{{ user.city }}" required>
+
+            <label for="country">Country:</label>
+            <input type="text" id="country" name="country" value="{{ user.country }}" required>
+
+            <button type="submit">Update Profile</button>
+        </form>
+    </div>
+</div>
+
+<style>
+
+.avatar-section {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .current-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 10px;
+        object-fit: cover;
+        margin-bottom: 10px;
+    }
+    .avatar-upload input[type="file"] {
+        width: 90%;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        background: white;
+    }
+
+    .interests-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 15px 0;
+    }
+    
+    .interest-tag {
+        display: inline-block;
+        position: relative;
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+    
+    .interest-tag input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+    }
+    
+    .interest-tag.selected {
+        background-color: #e0e7ff;
+        border-color: #4f0022;
+        color: #c10958;
+    }
+
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 3vh;
+    }
+
+    .login-box {
+        background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        width: 300px;
+    }
+
+    .login-box form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .login-box label {
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .login-box input, select {
+        margin-bottom: 15px;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+    }
+
+    textarea{
+        
+        margin-bottom: 15px;
+    }
+
+    .login-box button {
+        background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .login-box button:hover {
+        opacity: 0.9;
+    }
+</style>
+
+<script>
+    document.getElementById('avatar').addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.querySelector('.current-avatar').src = e.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    // Add click handling for interest tags
+    document.querySelectorAll('.interest-tag').forEach(tag => {
+        const checkbox = tag.querySelector('input[type="checkbox"]');
+        if (checkbox.checked) {
+            tag.classList.add('selected');
+        }
+        
+        tag.addEventListener('click', function() {
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            this.classList.toggle('selected', checkbox.checked);
+        });
+    });
+</script>
 {% endblock %}

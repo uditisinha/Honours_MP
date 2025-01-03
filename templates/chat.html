@@ -1,4 +1,3 @@
-<!-- Updated chat.html template -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,35 +11,54 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+        .nav-left, .nav-right {
             display: flex;
-            justify-content: center;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+
+        .user-header {
+            display: flex;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            gap: 1rem;
+            border-radius: 10px;
+            margin: 10px;
+            margin-bottom: 5px;
+            padding: 10px;
+            color: white;
+            font-size: 2.5vh;
+            background-color: rgba(0, 0, 0, 0.24);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 2.5vh;
         }
 
         .chat-container {
             width: 100%;
-            max-width: 600px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
-            height: 80vh;
-        }
-
-        .chat-header {
-            background-color: #0078d7;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px 8px 0 0;
+            height: calc(100vh - 60px);
         }
 
         .chat-messages {
@@ -49,112 +67,113 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 1rem;
         }
 
         .message {
             max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 14px;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-size: 1rem;
             line-height: 1.4;
-            position: relative;
+            color: white;
+            word-wrap: break-word;
         }
 
         .message.sent {
-            background-color: #0078d7;
-            color: white;
+            background-color: #10164B;
             align-self: flex-end;
-            margin-left: auto;
         }
 
         .message.received {
-            background-color: #e0e0e0;
-            color: black;
+            background-color: #2D0829;
             align-self: flex-start;
         }
 
-        .message-time {
-            font-size: 10px;
-            opacity: 0.7;
-            margin-top: 4px;
-        }
-
         .chat-input {
-            padding: 15px;
-            border-top: 1px solid #ddd;
-            background-color: #f9f9f9;
-            border-radius: 0 0 8px 8px;
+            padding: 5px;
+            margin: 5px;
         }
 
         .input-container {
             display: flex;
-            gap: 10px;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 2rem;
         }
 
         .chat-input input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            border: none;
             outline: none;
-            font-size: 14px;
+            font-size: 1rem;
+            background: transparent;
         }
 
         .chat-input button {
-            padding: 10px 20px;
             border: none;
-            border-radius: 20px;
-            background-color: #0078d7;
+            border-radius: 1.5rem;
+            background-color: #B0357B;
             color: white;
             cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.2s;
+            font-size: 1rem;
         }
 
         .chat-input button:hover {
-            background-color: #005bb5;
+            background-color: #8F2863;
         }
 
         .message-error {
-            color: red;
-            font-size: 12px;
-            margin-top: 5px;
+            color: #ff4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            text-align: center;
             display: none;
         }
     </style>
 </head>
 <body>
+    {% include "includes/header.html" %}
     <div class="chat-container">
-        <div class="chat-header">
-            Chat
+        <div class="user-header">
+            <div class="user-avatar">
+                <img src="{{ other_user.avatar if other_user.avatar else url_for('static', filename='images/user.png') }}" alt="User avatar">
+            </div>            
+            <div class="user-name">{{ other_user.name }}</div>
         </div>
+        
+
         <div class="chat-messages" id="messageContainer">
             <!-- Messages will be populated here -->
         </div>
+
         <div class="chat-input">
             <div class="input-container">
                 <input type="text" id="messageInput" placeholder="Type your message...">
-                <button onclick="sendMessage()">Send</button>
+                <button onclick="sendMessage()" style="width: 50px; height: 50px;">
+                    <img src="../static/images/send.png" alt="Send" style="width: 25px; height: 25px; margin-top: 5px;">
+                </button>
+                
             </div>
             <div class="message-error" id="messageError"></div>
         </div>
     </div>
 
     <script>
+        // Previous JavaScript code remains the same
         const chatId = window.location.pathname.split('/').pop();
         const messageContainer = document.getElementById('messageContainer');
         const messageInput = document.getElementById('messageInput');
         const messageError = document.getElementById('messageError');
 
-        // Load existing messages
         async function loadMessages() {
             try {
                 const response = await fetch(`/api/messages/${chatId}`);
                 if (!response.ok) throw new Error('Failed to load messages');
                 
                 const messages = await response.json();
-                messageContainer.innerHTML = ''; // Clear existing messages
+                messageContainer.innerHTML = '';
                 
                 messages.forEach(message => {
                     appendMessage(message);
@@ -166,7 +185,6 @@
             }
         }
 
-        // Send new message
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message) return;
@@ -191,7 +209,6 @@
             }
         }
 
-        // Append message to container
         function appendMessage(message) {
             const messageDiv = document.createElement('div');
             const isCurrentUser = message.sender === '{{ session["user"] }}';
@@ -205,7 +222,6 @@
             messageContainer.appendChild(messageDiv);
         }
 
-        // Show error message
         function showError(message) {
             messageError.textContent = message;
             messageError.style.display = 'block';
@@ -214,22 +230,17 @@
             }, 3000);
         }
 
-        // Scroll to bottom of message container
         function scrollToBottom() {
             messageContainer.scrollTop = messageContainer.scrollHeight;
         }
 
-        // Handle enter key
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
 
-        // Initial load
         loadMessages();
-
-        // Periodic refresh (every 5 seconds)
         setInterval(loadMessages, 5000);
     </script>
 </body>

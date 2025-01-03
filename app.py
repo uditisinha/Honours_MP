@@ -14,11 +14,18 @@ from datetime import datetime
 from models import db, User, UserResponse, Event, UserEvent, UserChats, UserMessages
 from sqlalchemy.exc import IntegrityError
 from personality_matcher import update_ranked_matches_route
+import os
+from werkzeug.utils import secure_filename
+
 
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres.jgmvvjlfnqimbwoqqfam:poonambhogle@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
 app.secret_key = "SecretestKey"
+
+app.config['UPLOAD_FOLDER'] = 'static/images/avatars'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 db.init_app(app)
 
@@ -84,15 +91,48 @@ def chat_list():
     if 'user' not in session:
         flash("Please log in to view your profile.", 'warning')
         return redirect(url_for('login'))
-    # Get user email from session - adjust this based on your session management
+
+    # Get user email from session
     user_email = session['user']
-    
+
     # Redirect if not logged in
     if not user_email:
         return redirect(url_for('login'))
-        
-    chats = get_user_chats(user_email)
-    return render_template('chat_list.html', chats=chats, user_email=user_email)
+
+    # Fetch user's name and avatar
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        flash("User not found.", 'danger')
+        return redirect(url_for('login'))
+
+    user_name = user.name
+    user_avatar = user.avatar
+
+    # Fetch chats and additional user info
+    chats = UserChats.query.filter((UserChats.email_1 == user_email) | (UserChats.email_2 == user_email)).all()
+
+    # Fetch other user details for each chat
+    chat_details = []
+    for chat in chats:
+        other_email = chat.email_2 if user_email == chat.email_1 else chat.email_1
+        other_user = User.query.filter_by(email=other_email).first()
+        chat_details.append({
+            'chat_id': chat.chat_id,
+            'other_user': {
+                'name': other_user.name if other_user else 'Unknown User',
+                'avatar': other_user.avatar if other_user and other_user.avatar else '../static/images/user.png',
+            }
+        })
+
+    # Pass user details and chats to the template
+    return render_template(
+        'chat_list.html',
+        chats=chat_details,
+        user_email=user_email,
+        user_name=user_name,
+        user_avatar=user_avatar
+    )
+
 
 @app.route('/signup/', methods=['GET', 'POST'])
 def signup():
@@ -254,34 +294,71 @@ def leave_event():
     
     return redirect(url_for('eventPage'))
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/edit_profile/', methods=['GET', 'POST'])
 def edit_profile():
     if 'user' not in session:
         flash("Please log in to edit your profile.", 'warning')
         return redirect(url_for('login'))
 
-    # Get the user by email from session
     user_email = session['user']
     user = User.query.filter_by(email=user_email).first()
     
     if request.method == 'POST':
-        # Get the new values from the form
+        # Handle avatar upload
+        if 'avatar' in request.files:
+            file = request.files['avatar']
+            if file and file.filename != '' and allowed_file(file.filename):
+                # Create upload directory if it doesn't exist
+                if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                    os.makedirs(app.config['UPLOAD_FOLDER'])
+                
+                # Save the file with a secure filename
+                filename = secure_filename(f"{user.email}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                # Remove old avatar file if it exists
+                if user.avatar and os.path.exists(user.avatar[1:]):  # Remove leading slash
+                    try:
+                        os.remove(user.avatar[1:])
+                    except Exception as e:
+                        print(f"Error removing old avatar: {e}")
+                
+                # Save new avatar
+                file.save(filepath)
+                user.avatar = '/' + filepath  # Store path in database with leading slash
+
+        # Get all the new values from the form
         new_email = request.form['email']
+        new_name = request.form['name']
+        new_bio = request.form['bio']  # Add this line
+        new_gender = request.form['gender']
+        new_dob = request.form['dob']
+        new_interests = request.form.getlist('interests[]')
+        new_city = request.form['city']
+        new_country = request.form['country']
 
-        # Ensure the new email is unique
-        if new_email != user.email and User.query.filter_by(email=new_email).first():
-            flash("Email is already in use. Please choose a different one.", 'danger')
-        else:
-            # Update the user's email and password
+        try:
+            # Update all user fields including bio
             user.email = new_email
+            user.name = new_name
+            user.bio = new_bio  # Add this line
+            user.gender = new_gender
+            user.dob = new_dob
+            user.interests = new_interests
+            user.city = new_city
+            user.country = new_country
 
-            try:
-                db.session.commit()
-                session['user'] = new_email  # Update the session with the new email
-                flash("Profile updated successfully!", 'success')
-                return redirect(url_for('profile'))
-            except Exception as e:
-                flash(f"Error updating profile: {e}", 'danger')
+            db.session.commit()
+            session['user'] = new_email
+            flash("Profile updated successfully!", 'success')
+            return redirect(url_for('profile'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating profile: {e}", 'danger')
+            return redirect(url_for('edit_profile'))
 
     return render_template('edit_profile.html', user=user)
 
@@ -609,12 +686,26 @@ def send_message(chat_id):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
+@app.route('/chat/<int:chat_id>')
 def chat_page(chat_id):
-    if 'user' not in session:
-        flash("Please log in to view your profile.", 'warning')
-        return redirect(url_for('login'))
-    return render_template('chat.html')
+    # Get the chat details
+    chat = UserChats.query.get(chat_id)
+    
+    if not chat:
+        return "Chat not found", 404
+    
+    # Determine the other user's email
+    user_email = session["user"]  # Assuming user's email is stored in session
+    other_email = chat.email_1 if chat.email_2 == user_email else chat.email_2
+    
+    # Get the other user's details
+    other_user = User.query.filter_by(email=other_email).first()
+    
+    if not other_user:
+        return "User not found", 404
+    
+    return render_template('chat.html', other_user=other_user)
+
 
 @app.route('/create_chat/<int:event_id>/<string:matched_email>', methods=['POST'])
 def create_chat(event_id, matched_email):

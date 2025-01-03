@@ -1,8 +1,82 @@
+<head>
+    <style>
+        .container {
+            max-width: 800px;
+        }
+
+        .mb-4 {
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            color: white;
+            font-family: 'Quicksand', sans-serif;
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            color: white;
+            font-size: 2.5vh;
+            font-family: 'Quicksand', sans-serif;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .form-control {
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 1rem;
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 2rem;
+            resize: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #FFD700, #FFA500);
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            color: black;
+            width: 100%;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            background: linear-gradient(to right, #FFA500, #FFD700);
+        }
+
+        .alert {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Remove the Bootstrap validation styles */
+        .was-validated .form-control:invalid,
+        .form-control.is-invalid {
+            border-color: transparent;
+            background-image: none;
+        }
+
+        .invalid-feedback {
+            color: #ffd700;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="mb-4">Get to Know You Questionnaire</h2>
+<div class="container">
     
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -13,46 +87,39 @@
     {% endwith %}
     
     <form method="POST" class="needs-validation" novalidate>
-        <div class="mb-4">
+        <div>
             <label for="q1_fictional_character" class="form-label">If you could be any fictional character for a day, who would you choose and why?</label>
             <textarea class="form-control" id="q1_fictional_character" name="q1_fictional_character" rows="3" required>{{ existing_response.q1_fictional_character if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
-        <div class="mb-4">
+        <div>
             <label for="q2_friendship_value" class="form-label">What do you value most in a friendship, and why?</label>
             <textarea class="form-control" id="q2_friendship_value" name="q2_friendship_value" rows="3" required>{{ existing_response.q2_friendship_value if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
-        <div class="mb-4">
+        <div>
             <label for="q3_group_role" class="form-label">When working in a group, what role do you usually take?</label>
             <textarea class="form-control" id="q3_group_role" name="q3_group_role" rows="3" required>{{ existing_response.q3_group_role if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
-        <div class="mb-4">
+        <div>
             <label for="q4_adventurous_activity" class="form-label">What's the most adventurous thing you'd do if fear wasn't a factor?</label>
             <textarea class="form-control" id="q4_adventurous_activity" name="q4_adventurous_activity" rows="3" required>{{ existing_response.q4_adventurous_activity if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
-        <div class="mb-4">
+        <div>
             <label for="q5_ultimate_day" class="form-label">If you could plan the ultimate day, what would it look like from morning to night?</label>
             <textarea class="form-control" id="q5_ultimate_day" name="q5_ultimate_day" rows="3" required>{{ existing_response.q5_ultimate_day if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
-        <div class="mb-4">
+        <div>
             <label for="q6_comfort_zone" class="form-label">How do you feel about trying new things or stepping out of your comfort zone?</label>
             <textarea class="form-control" id="q6_comfort_zone" name="q6_comfort_zone" rows="3" required>{{ existing_response.q6_comfort_zone if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
-        <div class="mb-4">
+        <div>
             <label for="q7_conversation_type" class="form-label">What type of conversations do you enjoy the most?</label>
             <textarea class="form-control" id="q7_conversation_type" name="q7_conversation_type" rows="3" required>{{ existing_response.q7_conversation_type if existing_response else '' }}</textarea>
-            <div class="invalid-feedback">Please provide an answer.</div>
         </div>
 
         <button type="submit" class="btn btn-primary">Submit Responses</button>

@@ -54,7 +54,20 @@
             padding: 0;
             margin: 0;
         }
-        
+        button{           
+            padding: 1.5vh;
+            margin: 1vh;
+            border-radius: 10px;
+            width: 100%;
+            border: none;
+            font-family: 'Quicksand', sans-serif;
+            margin: auto;
+            justify-content: center;
+            text-align: center;
+            font-size: 2.5vh;
+            margin-bottom: 2vh;
+            background-image: linear-gradient(to right, #c47c25, #c16a25, #bb5728, #b4442b, #ab312f);
+        }
     </style>
 </head>
 {% extends "base.html" %}
@@ -92,21 +105,20 @@
             <h3>
                 Host of the event:
             </h3><p> {{ host_name }}</p>
-            {% if not is_host %}
-                <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
-                    <input type="hidden" name="event_id" value="{{ active_event.id }}">
-                    <button type="submit" class="btn btn-danger">Leave Event</button>
-                </form>
-            {% endif %}
             {% if active_event %}
-            
             <div class="buttonclass">
                 <div class="button">
-                <a href="{{ url_for('rank_matches', event_id=active_event.id) }}" class="btn btn-primary">Ranked Matches</a>
+                    <a href="{{ url_for('rank_matches', event_id=active_event.id) }}" class="btn btn-primary">Ranked Matches</a>
                 </div>
             </div>
             {% endif %}
-        </div>
+            {% if not is_host %}
+                    <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="event_id" value="{{ active_event.id }}">
+                        <button type="submit" class="btn btn-danger">Leave Event</button>
+                    </form>
+            {% endif %}
+            
     {% endif %}
 </div>
 {% endblock %}

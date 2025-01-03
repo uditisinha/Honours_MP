@@ -8,17 +8,16 @@ from datetime import datetime
 import json
 import re
 
-GOOGLE_API_KEY='AIzaSyADvYMBmX_xCw_m0IzrD0FP8SpvWXzJp4g'
+GOOGLE_API_KEY='AIzaSyDmKGlt0wQREPzT8vI9WpzB5A37NuvLHlc'
 
 from models import db, User, UserResponse, Event, UserEvent, UserChats
-def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dict) -> float:
+def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dict) -> tuple[float, str]:
     """
-    Calculate personality similarity between two users based on their questionnaire responses
-    using natural language understanding and semantic comparison
+    Calculate personality similarity between two users and provide explanation
+    Returns a tuple of (similarity_score, explanation)
     """
     genai.configure(api_key=GOOGLE_API_KEY)
     
-    # Create a model instance
     generation_config = {
         "temperature": 0,
         "top_p": 0.8,
@@ -35,7 +34,6 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
     except Exception as e:
         print(f"Error: {e}")
     
-    # Clean up responses by removing SQLAlchemy metadata
     def clean_responses(responses: Dict) -> Dict:
         return {
             k: v for k, v in responses.items() 
@@ -45,21 +43,19 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
     user1_clean = clean_responses(user1_responses)
     user2_clean = clean_responses(user2_responses)
     
-    # Define weights for different question types
     weights = {
-        'q1_fictional_character': 0.15,  # Personality alignment
-        'q2_friendship_value': 0.20,     # Values alignment
-        'q3_group_role': 0.15,          # Social interaction style
-        'q4_adventurous_activity': 0.10, # Activity preferences
-        'q5_ultimate_day': 0.15,        # Lifestyle compatibility
-        'q6_comfort_zone': 0.10,        # Risk tolerance
-        'q7_conversation_type': 0.15     # Communication style
+        'q1_fictional_character': 0.15,
+        'q2_friendship_value': 0.20,
+        'q3_group_role': 0.15,
+        'q4_adventurous_activity': 0.10,
+        'q5_ultimate_day': 0.15,
+        'q6_comfort_zone': 0.10,
+        'q7_conversation_type': 0.15
     }
     
     try:
-        # Format responses for similarity analysis
         prompt = f"""
-        Compare these two sets of responses and provide similarity scores between 0 and 1 for each question:
+        Compare these two sets of responses and analyze their compatibility:
 
         User 1:
         {json.dumps(user1_clean, indent=2)}
@@ -67,46 +63,52 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
         User 2:
         {json.dumps(user2_clean, indent=2)}
 
-        Analyze the semantic similarity of responses for each question considering:
+        Analyze the semantic similarity of responses considering:
         1. Direct matches in word choice/meaning
         2. Thematic alignment
         3. Compatible personality traits
         4. Similar values and preferences
         5. Complementary characteristics
 
-        Return only a JSON object with numeric scores like this:
+        Return a JSON object with:
+        1. Numeric scores for each question (0-1)
+        2. A brief explanation of why they would or wouldn't be a good match
+
+        Format:
         {{
-            "q1_fictional_character": 0.85,
-            "q2_friendship_value": 0.72,
-            "q3_group_role": 0.93,
-            "q4_adventurous_activity": 0.65,
-            "q5_ultimate_day": 0.78,
-            "q6_comfort_zone": 0.88,
-            "q7_conversation_type": 0.70
+            "scores": {{
+                "q1_fictional_character": 0.85,
+                "q2_friendship_value": 0.72,
+                "q3_group_role": 0.93,
+                "q4_adventurous_activity": 0.65,
+                "q5_ultimate_day": 0.78,
+                "q6_comfort_zone": 0.88,
+                "q7_conversation_type": 0.70
+            }},
+            "explanation": "These users would be a good match because... [reasoning]"
         }}
         """
         
-        # Generate response using Gemini
         response = model.generate_content(prompt)
         
-        # Extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response.text)
         if not json_match:
             raise ValueError("No JSON found in response")
         
-        scores = json.loads(json_match.group())
+        result = json.loads(json_match.group())
+        scores = result['scores']
+        explanation = result['explanation']
         
-        # Calculate weighted average using matching keys
         weighted_score = sum(
             scores.get(q, 0) * weight
             for q, weight in weights.items()
         ) / sum(weights.values())
 
-        return max(0.0, min(1.0, weighted_score))  # Ensure score is between 0 and 1
+        return max(0.0, min(1.0, weighted_score)), explanation
         
     except Exception as e:
         print(f"Error calculating personality similarity: {str(e)}")
-        return 0.5  # Return neutral score on error
+        return 0.5, "Unable to generate explanation due to error"
 
 def calculate_profile_similarity(current_user: User, other_users: List[User]) -> List[Dict]:
     """
@@ -161,16 +163,13 @@ def calculate_profile_similarity(current_user: User, other_users: List[User]) ->
         {"user": user, "score": float(score)}
         for user, score in zip(other_users, similarities)
     ]
-
-    print(similarity_scores)
     
     return sorted(similarity_scores, key=lambda x: x["score"], reverse=True)
 
 def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
     """
-    Get combined rankings based on both profile similarity and personality compatibility
+    Get combined rankings with explanations for matches
     """
-    # Get all users in the event except current user
     event_users = User.query.join(UserEvent)\
         .filter(UserEvent.event_id == event_id)\
         .filter(User.email != user_email)\
@@ -180,9 +179,7 @@ def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
     if not current_user:
         return []
     
-    # Calculate profile similarity scores
     profile_scores = calculate_profile_similarity(current_user, event_users)
-    # Get personality scores
     personality_scores = []
     current_user_responses = UserResponse.query.filter_by(user_email=user_email).first()
     
@@ -190,31 +187,42 @@ def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
         for other_user in event_users:
             other_user_responses = UserResponse.query.filter_by(user_email=other_user.email).first()
             if other_user_responses:
-                personality_score = calculate_personality_similarity(
+                personality_score, explanation = calculate_personality_similarity(
                     current_user_responses.__dict__,
                     other_user_responses.__dict__
                 )
                 personality_scores.append({
                     'user': other_user,
-                    'score': personality_score
+                    'score': personality_score,
+                    'explanation': explanation
                 })
     
-    # Combine scores (50% profile similarity, 50% personality compatibility)
     combined_scores = []
     for user in event_users:
         profile_score = next((s['score'] for s in profile_scores if s['user'].email == user.email), 0)
-        personality_score = next((s['score'] for s in personality_scores if s['user'].email == user.email), 0)
+        personality_match = next((s for s in personality_scores if s['user'].email == user.email), 
+                               {'score': 0, 'explanation': 'No personality data available'})
         
-        combined_score = (profile_score * 0.4 + personality_score * 0.6)
+        combined_score = (profile_score * 0.4 + personality_match['score'] * 0.6)
+        
+        # Print detailed matching information to console
+        print(f"\nMatch Analysis for {user.email}:")
+        print(f"Profile Score: {profile_score:.2f}")
+        print(f"Personality Score: {personality_match['score']:.2f}")
+        print(f"Combined Score: {combined_score:.2f}")
+        print(f"Explanation: {personality_match['explanation']}")
+        print("-" * 80)
+        
         combined_scores.append({
             'user': user,
             'score': combined_score,
             'profile_score': profile_score,
-            'personality_score': personality_score
+            'personality_score': personality_match['score'],
+            'explanation': personality_match['explanation']
         })
     
-    # Sort by combined score
     return sorted(combined_scores, key=lambda x: x['score'], reverse=True)
+
 
 def update_ranked_matches_route(app):
     """
