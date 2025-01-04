@@ -8,3 +8,4 @@ scikit-learn
 numpy
 google-generativeai
 gunicorn
+psycopg2-binary
