@@ -11,6 +11,7 @@
   }
 
   .navbar {
+    max-width: 90%;
     display: flex;
   }
 
@@ -26,7 +27,7 @@
     padding: 0;
     font-size: 2vh;
     margin: 0;
-    margin: 2vh;
+    margin: 1vh;
   }
 
   .nav-links a {
@@ -105,10 +106,10 @@
       <div class="right-links">
         {% if 'user' in session %}
           <li><a href="/profile/">Profile</a></li>
-          <li><a href="/logout/">Logout</a></li>
+          <li style="margin-right: 0;"><a href="/logout/">Logout</a></li>
         {% else %}
           <li><a href="/login/">Login</a></li>
-          <li><a href="/signup/">Signup</a></li>
+          <li><a href="/signup/"style="margin-right: 0;">Signup</a></li>
         {% endif %}
       </div>
     </ul>

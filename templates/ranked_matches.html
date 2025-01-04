@@ -1,52 +1,136 @@
+<head>
+    <style>
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .top img{
+            width: 40%;
+            margin-left: auto;
+        }
+        .maindiv{
+            background-color: rgba(0, 0, 0, 0.297);
+            color: white;
+            width: fit-content;
+            border-radius: 10px;
+            padding-bottom: 2vh;
+        }
+        .maindiv img{
+            margin: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2vh;
+            padding-bottom: 1vh;
+            border-radius: 20px;
+            width: 90%;
+        }
+        .maindiv h1{
+            padding: 0;
+            margin: 0;
+            margin-left: 2vh;
+            margin-right: 2vh;
+        }
+        .maindiv p{
+            padding: 0;
+            margin: 0;
+            margin-left: 2vh;
+            margin-right: 2vh;
+        }
+        .interests{
+            padding: 0;
+            margin: 0;
+            margin-left: 2vh;
+            margin-right: 1vh;
+        }
+        .maindiv h3{
+            padding: 0;
+            margin: 0;
+            margin-top: 1vh;
+            margin-left: 2vh;
+            margin-right: 2vh;
+        }
+
+        .addchat{
+            padding: 1vh;
+            width: 90%;
+            margin: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            font-size: 2vh;
+            border-width: 1px;
+            font-weight: bold;
+            border-style: solid;
+            color: rgb(0, 0, 0);
+            border-color: black;
+            margin-top: 2vh;
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+        }
+
+        .addchat:hover{
+            opacity: 0.8;
+        }
+    </style>
+</head>
 {% extends "base.html" %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Your Matches</h1>
+    
+    <div class="top">
+        <div class="topic">Your matches</div>
+    </div>
     
     {% if matches %}
-    <div class="grid gap-6">
+    <div class="maindiv">
         {% for match in matches %}
-        <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer"
-            onclick="createChat('{{ match.user.email }}')">
-            <div class="flex justify-between items-start">
+        <div>
+            <div>
                 <div>
-                    <h2 class="text-xl font-semibold">{{ match.user.name }}</h2>
-                    <h2 class="text-xl font-semibold">{{ match.user.bio }}</h2>
-                    <h2 class="text-xl font-semibold">{{ match.user.avatar }}</h2>
-                    <p class="text-gray-600">{{ match.user.city }}, {{ match.user.country }}</p>
-                </div>
-                <div class="text-right">
-                    <div class="text-2xl font-bold text-blue-600">
-                        {{ "%.0f"|format(match.score * 100) }}%
-                    </div>
-                    <div class="text-sm text-gray-500">Overall Match</div>
+                    <img src="{{ match.user.avatar if match.user.avatar else url_for('static', filename='images/user.png') }}" alt="Profile Picture" class="avatar">
+                    <h1>{{ match.user.name }}</h1>
+                    <p style="font-style: italic; color:#aeaeae;">Match Score: {{ "%.0f"|format(match.score * 100) }}%</p>
+                    {% if match.user.bio != "None" %}
+                        <p>{{ match.user.bio }}</p>
+                    {% endif %}
                 </div>
             </div>
-            
-            <div class="mt-4 grid grid-cols-2 gap-4">
-                <div class="bg-blue-50 p-3 rounded">
-                    <div class="text-lg font-semibold text-blue-600">
-                    </div>
-                    <div class="text-sm text-gray-600">Profile Compatibility</div>
-                </div>
-                <div class="bg-purple-50 p-3 rounded">
-                    <div class="text-lg font-semibold text-purple-600">
-                    </div>
-                    <div class="text-sm text-gray-600">Personality Match</div>
-                </div>
-            </div>
-            
-            <div class="mt-4">
-                <h3 class="font-semibold mb-2">Interests:</h3>
-                <div class="flex flex-wrap gap-2">
+                        
+            <div>
+                <h3>Interests:</h3>
+                <div class="interests">
                     {% for interest in match.user.interests %}
-                    <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">
-                        {{ interest }}
+                    <span>
+                        {{ interest }},
                     </span>
                     {% endfor %}
                 </div>
             </div>
+
+            {% if match.explanation != "No personality data available. Please answer the personality questionnaire." %}
+                <div>
+                    <h3>Reason for match:</h3>
+                    <div class="interests">
+                        {{ match.explanation }}
+                    </div>
+                </div>
+            {% endif %}
+
+
+            <button class="addchat" onclick="createChat('{{ match.user.email }}')">Chat</button>
         </div>
         {% endfor %}
     </div>

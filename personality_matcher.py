@@ -9,6 +9,8 @@ import json
 import re
 
 GOOGLE_API_KEY='AIzaSyDmKGlt0wQREPzT8vI9WpzB5A37NuvLHlc'
+GOOGLE_API_KEY='AIzaSyDwsOjC6diV88sDez5BuUeCYheVS0aa5UI'
+# GOOGLE_API_KEY='AIzaSyBJXh--ktIhO3u6d_I51aTjo8brP6VwloU'
 
 from models import db, User, UserResponse, Event, UserEvent, UserChats
 def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dict) -> tuple[float, str]:
@@ -60,7 +62,7 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
         User 1:
         {json.dumps(user1_clean, indent=2)}
 
-        User 2:
+        User 2: 
         {json.dumps(user2_clean, indent=2)}
 
         Analyze the semantic similarity of responses considering:
@@ -72,7 +74,7 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
 
         Return a JSON object with:
         1. Numeric scores for each question (0-1)
-        2. A brief explanation of why they would or wouldn't be a good match
+        2. A brief, personalized explanation (1 line) addressing both users directly about why they would or wouldn't be a good match
 
         Format:
         {{
@@ -85,7 +87,7 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
                 "q6_comfort_zone": 0.88,
                 "q7_conversation_type": 0.70
             }},
-            "explanation": "These users would be a good match because... [reasoning]"
+            "explanation": "You two would be a great match because... [brief 2-3 line personalized explanation addressing both users]"
         }}
         """
         
@@ -109,62 +111,78 @@ def calculate_personality_similarity(user1_responses: Dict, user2_responses: Dic
     except Exception as e:
         print(f"Error calculating personality similarity: {str(e)}")
         return 0.5, "Unable to generate explanation due to error"
+from typing import List, Dict
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from datetime import datetime
 
 def calculate_profile_similarity(current_user: User, other_users: List[User]) -> List[Dict]:
     """
     Calculate profile similarity scores between current user and other users
-    based on interests, age, location, and other profile attributes
+    with increased focus on shared interests and location.
     """
     if not other_users:
         return []
     
-    # Create feature vectors for comparison
-    def create_feature_vector(user):
-        # Calculate age
-        # Calculate age
-        age = (datetime.now().date() - user.dob).days / 365.25
+    similarity_scores = []
+    
+    for other_user in other_users:
+        # Calculate interest similarity
+        current_interests = set(current_user.interests)
+        other_interests = set(other_user.interests)
         
-        # Convert interests list to binary features
-        all_interests = set()
-        for u in [current_user] + other_users:
-            if u.interests:
-                all_interests.update(u.interests)
+        shared_interests = current_interests & other_interests
+        total_interests = current_interests | other_interests
         
-        interest_vector = [1 if interest in user.interests else 0 
-                         for interest in all_interests]
+        # Calculate scores for different components
+        interest_score = len(shared_interests) / len(total_interests) if total_interests else 0
+        location_score = 0.0
+        if other_user.city == current_user.city:
+            location_score = 1.0
+        elif other_user.country == current_user.country:
+            location_score = 0.5
+            
+        # Age similarity (less weight)
+        age_current = (datetime.now().date() - current_user.dob).days / 365.25
+        age_other = (datetime.now().date() - other_user.dob).days / 365.25
+        age_diff = abs(age_current - age_other)
+        age_score = max(0, 1 - (age_diff / 10))  # Normalize age difference to 0-1 scale
         
-        # Location matching (city/country)
-        same_city = 1 if user.city == current_user.city else 0
-        same_country = 1 if user.country == current_user.country else 0
+        # Calculate final score with weights
+        final_score = (
+            interest_score * 0.7 +  # 70% weight to interests
+            location_score * 0.2 +  # 20% weight to location
+            age_score * 0.1        # 10% weight to age
+        )
         
-        # Combine all features
-        return np.array([age] + interest_vector + [same_city, same_country])
-    
-    # Create feature matrix
-    current_features = create_feature_vector(current_user)
-    other_features = np.array([create_feature_vector(user) for user in other_users])
-    
-    # Normalize features
-    scaler = MinMaxScaler()
-    features_normalized = scaler.fit_transform(
-        np.vstack([current_features.reshape(1, -1), other_features])
-    )
-    
-    current_normalized = features_normalized[0]
-    others_normalized = features_normalized[1:]
-    
-    # Calculate cosine similarity
-    similarities = np.dot(others_normalized, current_normalized) / (
-        np.linalg.norm(others_normalized, axis=1) * np.linalg.norm(current_normalized)
-    )
-    
-    # Create similarity scores list
-    similarity_scores = [
-        {"user": user, "score": float(score)}
-        for user, score in zip(other_users, similarities)
-    ]
+        # Build explanation
+        location_match = ""
+        if other_user.city == current_user.city:
+            location_match = " and are in the same city"
+        elif other_user.country == current_user.country:
+            location_match = " and are in the same country"
+        
+        interest_percentage = (len(shared_interests) / len(total_interests) * 100) if total_interests else 0
+        explanation = (f"You share {len(shared_interests)} interests: {', '.join(shared_interests)} "
+                      f"({interest_percentage:.1f}% overlap){location_match}")
+        
+        # Debug information
+        print(f"\nMatching details for {other_user.email}:")
+        print(f"Shared interests: {shared_interests}")
+        print(f"Interest score: {interest_score:.2f}")
+        print(f"Location score: {location_score:.2f}")
+        print(f"Age score: {age_score:.2f}")
+        print(f"Final score: {final_score:.2f}")
+        
+        similarity_scores.append({
+            "user": other_user,
+            "score": float(final_score),
+            "profile_explanation": explanation,
+            "shared_interests": list(shared_interests)
+        })
     
     return sorted(similarity_scores, key=lambda x: x["score"], reverse=True)
+
 
 def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
     """
@@ -201,7 +219,7 @@ def get_combined_rankings(event_id: int, user_email: str) -> List[Dict]:
     for user in event_users:
         profile_score = next((s['score'] for s in profile_scores if s['user'].email == user.email), 0)
         personality_match = next((s for s in personality_scores if s['user'].email == user.email), 
-                               {'score': 0, 'explanation': 'No personality data available'})
+                               {'score': 0, 'explanation': 'No personality data available. Please answer the personality questionnaire.'})
         
         combined_score = (profile_score * 0.4 + personality_match['score'] * 0.6)
         
@@ -250,7 +268,6 @@ def update_ranked_matches_route(app):
                 flash("This event has ended. The matches are no longer available.", 'info')
                 return redirect(url_for('home'))
                 
-            # Verify user is part of this event
             is_participant = UserEvent.query.filter_by(
                 user_email=user_email,  # Use the stored user_email variable
                 event_id=event_id
@@ -261,6 +278,11 @@ def update_ranked_matches_route(app):
                 flash("You don't have access to these matches.", 'warning')
                 return redirect(url_for('home'))
             
+            user_responses = UserResponse.query.filter_by(user_email=user_email).first()
+            if not user_responses:
+                flash("Complete the personality questionnaire to get better matches!", 'warning')
+            
+
             matches = get_combined_rankings(event_id, user_email)
             if not matches:
                 flash("No matches available at this time.", 'info')
