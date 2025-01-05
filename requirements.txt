@@ -9,3 +9,4 @@ numpy
 google-generativeai
 gunicorn
 psycopg2-binary
+Pillow
