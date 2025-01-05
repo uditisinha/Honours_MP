@@ -247,7 +247,7 @@ def update_ranked_matches_route(app):
     Update the ranked_matches route to include personality-based matching
     """
     @app.route('/ranked_matches/<int:event_id>/', methods=['GET'])
-    def rank_matches(event_id):
+    def ranked_matches(event_id):
         if 'user' not in session:
             flash("Please log in to view matches.", 'warning')
             return redirect(url_for('login'))
