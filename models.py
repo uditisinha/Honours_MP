@@ -35,7 +35,7 @@ class Event(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     host = db.Column(db.String(120), nullable=False)
-    qr = db.Column(db.String(256), nullable=True) 
+    qr = db.Column(db.Text, nullable=True) 
 
 class UserEvent(db.Model):
     __tablename__ = 'user_event'

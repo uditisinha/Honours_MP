@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from personality_matcher import update_ranked_matches_route
 import os
 from werkzeug.utils import secure_filename
-
+import base64
 
 
 app = Flask(__name__)
@@ -36,7 +36,6 @@ supabase_client = supabase.create_client(supabase_url, supabase_key)
 with app.app_context():
     db.drop_all() 
     db.create_all()  
-
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -247,8 +246,6 @@ def eventPage():
         if participating_event:
             active_event = participating_event
             host_name = User.query.filter_by(email=participating_event.host).first().name
-    
-    print("hi")
     
     has_active_event = active_event is not None
     
@@ -467,9 +464,9 @@ def host_event():
 
             # Generate and save QR code
             qr = qrcode.make(code)
-            qr_filename = f"qr_{code}_{secure_filename(name)}.png"
-            qr_path = os.path.join(qr_dir, qr_filename)
-            qr.save(qr_path)
+            img_byte_arr = BytesIO()
+            qr.save(img_byte_arr, format='PNG')
+            img_str = base64.b64encode(img_byte_arr.getvalue()).decode()
 
             # Create new event
             event = Event(
@@ -478,7 +475,7 @@ def host_event():
                 start_time=start_time,
                 end_time=end_time,
                 host=session['user'],
-                qr=qr_filename  # Store just the filename
+                qr=img_str
             )
 
             db.session.add(event)

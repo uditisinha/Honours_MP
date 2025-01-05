@@ -128,7 +128,9 @@
         <div class="host-info">
             <h3>Event QR Code:</h3>
             <div class="qr-code">
-                <a href="{{ url_for('static', filename='qr_codes/' + active_event.qr) }}" download class="btn btn-secondary mt-2"><img src="{{ url_for('static', filename='qr_codes/' + active_event.qr) }}" alt="Event QR Code" class="qr-image"></a> 
+                <a href="data:image/png;base64,{{ active_event.qr }}" download="event_qr.png" class="btn btn-secondary mt-2">
+                    <img src="data:image/png;base64,{{ active_event.qr }}" alt="Event QR Code" class="qr-image">
+                </a>
             </div>
             <h1>OR</h1>
             <h3>Event Code:</h3>
