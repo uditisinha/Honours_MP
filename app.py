@@ -246,9 +246,9 @@ def eventPage():
                 Event.end_time > current_time
             ).first()
             if participating_event:
-                active_event = participating_event
-            #     host_user = User.query.filter_by(email=participating_event.host).first()
-            #     host_name = host_user.name if host_user else "Unknown"
+                # active_event = participating_event
+                host_user = User.query.filter_by(email=participating_event.host).first()
+                host_name = host_user.name if host_user else "Unknown"
         
         has_active_event = active_event is not None
         active_event_name = active_event.name if active_event else None
