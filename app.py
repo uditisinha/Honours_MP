@@ -239,16 +239,16 @@ def eventPage():
             is_host = True
             host_user = User.query.filter_by(email=hosted_event.host).first()
             host_name = host_user.name if host_user else "Unknown"
-        else:
-            # Check if user is participating in any active events
-            participating_event = db.session.query(Event).join(UserEvent).filter(
-                UserEvent.user_email == user_email,
-                Event.end_time > current_time
-            ).first()
-            if participating_event:
-                active_event = participating_event
-                host_user = User.query.filter_by(email=participating_event.host).first()
-                host_name = host_user.name if host_user else "Unknown"
+        # else:
+        #     # Check if user is participating in any active events
+        #     participating_event = db.session.query(Event).join(UserEvent).filter(
+        #         UserEvent.user_email == user_email,
+        #         Event.end_time > current_time
+        #     ).first()
+        #     if participating_event:
+        #         active_event = participating_event
+        #         host_user = User.query.filter_by(email=participating_event.host).first()
+        #         host_name = host_user.name if host_user else "Unknown"
         
         has_active_event = active_event is not None
         active_event_name = active_event.name if active_event else None
