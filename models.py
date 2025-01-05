@@ -44,7 +44,7 @@ class UserEvent(db.Model):
 
 class UserChats(db.Model):
     __tablename__ = 'UserChats'
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'))
+    event_id = db.Column(db.Integer)
     chat_id = db.Column(db.Integer, primary_key=True)
     email_1 = db.Column(db.String(120), db.ForeignKey('user.email'))
     email_2 = db.Column(db.String(120), db.ForeignKey('user.email'))

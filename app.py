@@ -33,9 +33,9 @@ supabase_url = "https://jgmvvjlfnqimbwoqqfam.supabase.co"
 supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZ2amxmbnFpbWJ3b3FxZmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyOTczMTEsImV4cCI6MjA1MDg3MzMxMX0.jED2-HuAoiAdY_BSqFAr2YIaHjF9eSIzdppmSCy1x7Y"  # Ensure this key is correct
 supabase_client = supabase.create_client(supabase_url, supabase_key)
 
-# with app.app_context():
-#     db.drop_all() 
-#     db.create_all()  
+with app.app_context():
+    db.drop_all() 
+    db.create_all()  
 
 @app.route('/')
 def home():
