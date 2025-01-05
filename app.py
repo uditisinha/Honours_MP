@@ -222,39 +222,48 @@ def eventPage():
     current_time = datetime.now()
     user_email = session['user']
     
-    # Check if user has any active events
+    # Initialize variables
     active_event = None
     is_host = False
     host_name = None
+    has_active_event = False
     
-    # Check if user is hosting any active events
-    hosted_event = Event.query.filter_by(
-        host=user_email
-    ).filter(Event.end_time > current_time).first()
-    
-    print(hosted_event)
-    if hosted_event:
-        active_event = hosted_event
-        is_host = True
-        host_name = User.query.filter_by(email=hosted_event.host).first().name
-    else:
-        # Check if user is participating in any active events
-        participating_event = db.session.query(Event).join(UserEvent).filter(
-            UserEvent.user_email == user_email,
-            Event.end_time > current_time
-        ).first()
-        if participating_event:
-            active_event = participating_event
-            host_name = User.query.filter_by(email=participating_event.host).first().name
-    
-    has_active_event = active_event is not None
-    
-    return render_template('event.html',
-                         has_active_event=has_active_event,
-                         active_event=active_event,
-                         active_event_name=active_event.name if active_event else None,
-                         host_name=host_name,
-                         is_host=is_host)
+    try:
+        # Check if user is hosting any active events
+        hosted_event = Event.query.filter_by(
+            host=user_email
+        ).filter(Event.end_time > current_time).first()
+        
+        if hosted_event:
+            active_event = hosted_event
+            is_host = True
+            host_user = User.query.filter_by(email=hosted_event.host).first()
+            host_name = host_user.name if host_user else "Unknown"
+        else:
+            # Check if user is participating in any active events
+            participating_event = db.session.query(Event).join(UserEvent).filter(
+                UserEvent.user_email == user_email,
+                Event.end_time > current_time
+            ).first()
+            if participating_event:
+                active_event = participating_event
+                host_user = User.query.filter_by(email=participating_event.host).first()
+                host_name = host_user.name if host_user else "Unknown"
+        
+        has_active_event = active_event is not None
+        active_event_name = active_event.name if active_event else None
+
+        return render_template('event.html',
+                            has_active_event=has_active_event,
+                            active_event=active_event,
+                            active_event_name=active_event_name,
+                            host_name=host_name,
+                            is_host=is_host)
+                            
+    except Exception as e:
+        app.logger.error(f"Error in eventPage: {str(e)}")
+        flash("An error occurred while loading the event page.", 'danger')
+        return redirect(url_for('home'))
 
 @app.route('/leave_event', methods=['POST'])
 def leave_event():
