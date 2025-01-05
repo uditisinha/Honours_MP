@@ -255,14 +255,14 @@ def eventPage():
 
         return render_template('event.html',
                             has_active_event=has_active_event,
-                            # active_event=active_event,
+                            active_event=active_event,
                             active_event_name=active_event_name,
                             host_name=host_name,
                             is_host=is_host)
                             
     except Exception as e:
         app.logger.error(f"Error in eventPage: {str(e)}")
-        flash("An error occurred while loading the event page.", 'danger')
+        flash(f"An error occurred while loading the event page. {str(e)}", 'danger')
         return redirect(url_for('home'))
 
 @app.route('/leave_event', methods=['POST'])
