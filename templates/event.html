@@ -1,44 +1,42 @@
-<!DOCTYPE html>
-<html>
 <head>
     <style>
-        .button {
+        .button{
             padding: 1.5vh;
-            margin: 1vh auto 2vh;
+            margin: 1vh;
             border-radius: 10px;
             width: 80%;
+            margin: auto;
             text-align: center;
+            margin-bottom: 2vh;
             background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
         }
-        
-        .button:hover {
+        .button:hover{
             background-image: linear-gradient(to right, #80760f, #89720e, #926e11, #9a6a16, #a1651c);
         }
-        
-        .button a {
+        .button a{
             text-decoration: none;
-            color: black;
+            color: black
+            margin: auto;
             font-size: 2.5vh;
         }
-        
-        .buttonclass {
+        a{
+            color: black;
+        }
+        .buttonclass{
             justify-content: center;
             margin-top: 2vh;
         }
-        
-        .buttonclass h2 {
+        .buttonclass h2{
             text-align: center;
             font-size: 3vh;
             color: white;
         }
-        
-        .joinhost {
+        .joinhost{
             background-color: rgba(0, 0, 0, 0.358);
             border-radius: 10px;
             padding: 1vh;
             margin: 1vh;
         }
-        
         .event-info {
             padding: 20px;
             background-color: rgba(0, 0, 0, 0.358);
@@ -46,36 +44,35 @@
             margin: 1vh;
             color: white;
         }
-        
-        .event-info h3 {
+        .event-info h3{
             padding: 0;
             font-size: 3vh;
             margin: 0;
             margin-top: 2vh;
         }
-        
-        .event-info p {
+        .event-info p{
             padding: 0;
             margin: 0;
         }
-        
-        button {
+        button{           
             padding: 1.5vh;
-            margin: 1vh auto 2vh;
+            margin: 1vh;
             border-radius: 10px;
             width: 100%;
             border: none;
             font-family: 'Quicksand', sans-serif;
+            margin: auto;
+            justify-content: center;
+            text-align: center;
             font-size: 2.5vh;
+            margin-bottom: 2vh;
             background-image: linear-gradient(to right, #c47c25, #c16a25, #bb5728, #b4442b, #ab312f);
         }
-        
-        .top {
+        .top{
             display: flex;
             margin-bottom: 3vh;
         }
-        
-        .topic {
+        .topic{
             background-color: #0A0E36;
             color: white;
             border-top-right-radius: 5px;
@@ -86,19 +83,17 @@
             text-align: center;
             margin-top: 1vh;
         }
-        
-        .top img {
+        .top img{
             width: 40%;
             margin-left: auto;
         }
-        
-        .toppart {
+        .toppart{
             margin: auto;
+            align-items: center;
             text-align: center;
             color: white;
         }
-        
-        .toppart img {
+        .toppart img{
             border-radius: 10px;
         }
     </style>
@@ -107,6 +102,7 @@
 
 {% block content %}
 <div class="container">
+    
     <div class="top">
         <div class="topic">Event</div>
     </div>
@@ -129,20 +125,18 @@
     {% else %}            
         {% if is_host %}
         <div class="toppart">
-            <div class="host-info">
-                <h3>Event QR Code:</h3>
-                <div class="qr-code">
-                    <a href="data:image/png;base64,{{ active_event.qr }}" download="event_qr.png">
-                        <img src="data:image/png;base64,{{ active_event.qr }}" alt="Event QR Code" class="qr-image">
-                    </a>
-                </div>
-                <h1>OR</h1>
-                <h3>Event Code:</h3>
-                <p class="event-code">{{ active_event.code }}</p>
+        <div class="host-info">
+            <h3>Event QR Code:</h3>
+            <div class="qr-code">
+                <a href="data:image/png;base64,{{ active_event.qr }}" download="event_qr.png" class="btn btn-secondary mt-2">
+                    <img src="data:image/png;base64,{{ active_event.qr }}" alt="Event QR Code" class="qr-image">
+                </a>
             </div>
+            <h1>OR</h1>
+            <h3>Event Code:</h3>
+            <p class="event-code">{{ active_event.code }}</p>
         </div>
         {% endif %}
-        
         <div class="event-info">
             <h3>Name of the event:</h3>
             <p>{{ active_event_name }}</p>
@@ -153,15 +147,15 @@
             {% if active_event %}
             <div class="buttonclass">
                 <div class="button">
-                    <a href="{{ url_for('ranked_matches', event_id=active_event.id) }}">Ranked Matches</a>
+                    <a href="{{ url_for('ranked_matches', event_id=active_event.id) }}" class="btn btn-primary">Ranked Matches</a>
                 </div>
             </div>
             {% endif %}
             
-            <form action="{{ url_for('leave_event') }}" method="POST">
-                <input type="hidden" name="event_id" value="{{ active_event.id }}">
-                <button type="submit">Leave Event</button>
-            </form>
+                <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="event_id" value="{{ active_event.id }}">
+                    <button type="submit" class="btn btn-danger">Leave Event</button>
+                </form>
             {% endif %}
         </div>
     {% endif %}
