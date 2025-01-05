@@ -144,7 +144,7 @@
             <p>{{ host_name }}</p>
 
             {% if not is_host %}
-            {% if active_event %}
+            <!-- {% if active_event %}
             <div class="buttonclass">
                 <div class="button">
                     <a href="{{ url_for('ranked_matches', event_id=active_event.id) }}" class="btn btn-primary">Ranked Matches</a>
@@ -156,7 +156,7 @@
                     <input type="hidden" name="event_id" value="{{ active_event.id }}">
                     <button type="submit" class="btn btn-danger">Leave Event</button>
                 </form>
-            {% endif %}
+            {% endif %} -->
         </div>
     {% endif %}
 </div>
