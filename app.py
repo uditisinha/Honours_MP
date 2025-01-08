@@ -242,7 +242,7 @@ def eventPage():
             host=user_email
         ).filter(Event.end_time > current_time).first()
 
-        flask(hosted_event)
+        flash(hosted_event)
         
         if hosted_event:
             active_event = hosted_event
