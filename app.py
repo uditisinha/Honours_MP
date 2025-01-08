@@ -241,7 +241,7 @@ def eventPage():
         hosted_event = Event.query.filter_by(
             host=user_email
         ).filter(Event.end_time > current_time).first()
-        
+        flash(hosted_event)
         if hosted_event:
             active_event = hosted_event
             is_host = True
