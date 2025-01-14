@@ -10,7 +10,7 @@ from flask import send_file
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import OneHotEncoder
-from datetime import datetime, timezone
+from datetime import datetime
 from models import db, User, UserResponse, Event, UserEvent, UserChats, UserMessages
 from sqlalchemy.exc import IntegrityError
 import os
@@ -220,71 +220,63 @@ def logout():
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
 
-# Route file
 @app.route('/event/')
 def eventPage():
     if 'user' not in session:
         flash("Please log in to access events.", 'warning')
         return redirect(url_for('login'))
     
-    current_time = datetime.now(timezone.utc)
+    # Force UTC timezone for consistent comparison
+    current_time = datetime.now().replace(tzinfo=None)
     user_email = session['user']
     
-    # Debug logging
-    app.logger.info("========= DEBUG INFO =========")
-    app.logger.info(f"Current time: {current_time}")
+    # Initialize variables
+    active_event = None
+    is_host = False
+    host_name = None
+    has_active_event = False
     
     try:
-        # Log hosted event check
-        hosted_event = Event.query.filter_by(host=user_email).first()  # Remove filter temporarily
-        if hosted_event:
-            app.logger.info(f"Found hosted event:")
-            app.logger.info(f"- Event name: {hosted_event.name}")
-            app.logger.info(f"- End time: {hosted_event.end_time}")
-            app.logger.info(f"- Is end_time > current_time: {hosted_event.end_time > current_time}")
-        
-        # Now apply the filter
+        # Check if user is hosting any active events
         hosted_event = Event.query.filter_by(
             host=user_email
         ).filter(Event.end_time > current_time).first()
         
         if hosted_event:
-            active_event = hosted_event
-            is_host = True
-            host_user = User.query.filter_by(email=hosted_event.host).first()
-            host_name = host_user.name if host_user else "Unknown"
-            app.logger.info("Event qualified as active hosted event")
+            # Convert event end time to naive datetime for comparison
+            if hosted_event.end_time.tzinfo:
+                hosted_event.end_time = hosted_event.end_time.replace(tzinfo=None)
+                
+            if hosted_event.end_time > current_time:
+                active_event = hosted_event
+                is_host = True
+                host_user = User.query.filter_by(email=hosted_event.host).first()
+                host_name = host_user.name if host_user else "Unknown"
         else:
-            # Log participating event check
-            participating_event = db.session.query(Event).join(UserEvent).filter(
-                UserEvent.user_email == user_email
-            ).first()  # Remove filter temporarily
-            
-            if participating_event:
-                app.logger.info(f"Found participating event:")
-                app.logger.info(f"- Event name: {participating_event.name}")
-                app.logger.info(f"- End time: {participating_event.end_time}")
-                app.logger.info(f"- Is end_time > current_time: {participating_event.end_time > current_time}")
-            
-            # Now apply the filter
+            # Check if user is participating in any active events
             participating_event = db.session.query(Event).join(UserEvent).filter(
                 UserEvent.user_email == user_email,
                 Event.end_time > current_time
             ).first()
             
             if participating_event:
-                active_event = participating_event
-                host_user = User.query.filter_by(email=participating_event.host).first()
-                host_name = host_user.name if host_user else "Unknown"
-                app.logger.info("Event qualified as active participating event")
+                # Convert event end time to naive datetime for comparison
+                if participating_event.end_time.tzinfo:
+                    participating_event.end_time = participating_event.end_time.replace(tzinfo=None)
+                    
+                if participating_event.end_time > current_time:
+                    active_event = participating_event
+                    host_user = User.query.filter_by(email=participating_event.host).first()
+                    host_name = host_user.name if host_user else "Unknown"
         
         has_active_event = active_event is not None
         active_event_name = active_event.name if active_event else None
 
-        app.logger.info(f"Final status:")
-        app.logger.info(f"- has_active_event: {has_active_event}")
-        app.logger.info(f"- active_event_name: {active_event_name}")
-        app.logger.info("============================")
+        # Add debug logging
+        app.logger.info(f"Current time: {current_time}")
+        if active_event:
+            app.logger.info(f"Event end time: {active_event.end_time}")
+            app.logger.info(f"Event is active: {has_active_event}")
 
         return render_template('event.html',
                             has_active_event=has_active_event,
@@ -297,7 +289,7 @@ def eventPage():
         app.logger.error(f"Error in eventPage: {str(e)}")
         flash(f"An error occurred while loading the event page. {str(e)}", 'danger')
         return redirect(url_for('home'))
-
+    
 @app.route('/leave_event', methods=['POST'])
 def leave_event():
     if 'user' not in session:
@@ -485,9 +477,9 @@ def host_event():
                 flash("All fields are required.", 'danger')
                 return redirect(url_for('host_event'))
 
-            # Parse datetime strings
-            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
-            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
+            # Parse datetime strings and ensure naive datetime objects
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=None)
+            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=None)
 
             # Validate end time is after start time
             if end_time <= start_time:
@@ -524,7 +516,7 @@ def host_event():
             db.session.commit()
 
             flash(f"Event '{name}' created successfully! Code: {code}", 'success')
-            return redirect(url_for('eventPage'))  # Redirect to event page
+            return redirect(url_for('eventPage'))
 
         except ValueError as e:
             flash("Invalid date/time format. Please use the datetime picker.", 'danger')
