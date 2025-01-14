@@ -10,7 +10,7 @@ from flask import send_file
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import OneHotEncoder
-from datetime import datetime
+from datetime import datetime, timezone
 from models import db, User, UserResponse, Event, UserEvent, UserChats, UserMessages
 from sqlalchemy.exc import IntegrityError
 import os
@@ -227,7 +227,7 @@ def eventPage():
         flash("Please log in to access events.", 'warning')
         return redirect(url_for('login'))
     
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
     user_email = session['user']
     
     # Initialize variables
@@ -270,7 +270,7 @@ def eventPage():
                             
     except Exception as e:
         app.logger.error(f"Error in eventPage: {str(e)}")
-        flash(f"An error occurred while loading the event page. {str(e)}", 'danger')
+        flash(f"An error occurred while loading the event page.", 'danger')
         return redirect(url_for('home'))
 
 @app.route('/leave_event', methods=['POST'])
@@ -386,7 +386,7 @@ def check_user_active_events(user_email):
     Returns tuple (is_active, active_event_name) where is_active is True if user 
     has an active event (including as host), and active_event_name is the name of that event.
     """
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
     
     # Check events where user is a participant
     user_events = db.session.query(Event, UserEvent).join(UserEvent).filter(
@@ -517,7 +517,7 @@ def get_user_active_event(user_email):
     Get user's active event details.
     Returns (event_id, is_expired) tuple. Returns (None, False) if no event found.
     """
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
     
     # Check events where user is a participant
     user_event = db.session.query(Event, UserEvent).join(UserEvent).filter(
@@ -567,7 +567,7 @@ def join_event():
 
         if event:
             # Check if the event has already ended
-            if event.end_time <= datetime.now():
+            if event.end_time <= datetime.now(timezone.utc):
                 flash("This event has already ended.", 'warning')
                 return redirect(url_for('join_event'))
 
@@ -678,7 +678,7 @@ def send_message(chat_id):
         
         sender = session['user']
         recipient = chat.email_2 if sender == chat.email_1 else chat.email_1
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc)
         
         print(f"Creating message: chat_id={chat_id}, sender={sender}, recipient={recipient}")
         
@@ -927,10 +927,10 @@ def calculate_profile_similarity(current_user: User, other_users: List[User]) ->
             location_score = 1.0
         elif other_user.country == current_user.country:
             location_score = 0.5
-            
+
         # Age similarity (less weight)
-        age_current = (datetime.now().date() - current_user.dob).days / 365.25
-        age_other = (datetime.now().date() - other_user.dob).days / 365.25
+        age_current = (datetime.now(timezone.utc).date() - current_user.dob).days / 365.25
+        age_other = (datetime.now(timezone.utc).date() - other_user.dob).days / 365.25
         age_diff = abs(age_current - age_other)
         age_score = max(0, 1 - (age_diff / 10))  # Normalize age difference to 0-1 scale
         
@@ -1036,7 +1036,7 @@ def ranked_matches(event_id):
     user_email = session['user']
     
     try:
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc)
         event = Event.query.get_or_404(event_id)
         
         # Check if event has expired
