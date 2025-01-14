@@ -20,6 +20,7 @@ import base64
 import google.generativeai as genai
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
+from sqlalchemy.sql import text
 from typing import List, Dict
 import json
 import re
@@ -222,7 +223,6 @@ def logout():
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
 
-# Route file
 @app.route('/event/')
 def eventPage():
     if 'user' not in session:
@@ -241,11 +241,11 @@ def eventPage():
     
     try:
         # Check if user is hosting any active events using UTC comparison
-        active_event_query = """
+        active_event_query = text("""
             SELECT e.* FROM event e 
             WHERE e.host = :user_email 
             AND e.end_time > :current_time
-        """
+        """)
         hosted_event = db.session.execute(
             active_event_query,
             {'user_email': user_email, 'current_time': current_time}
@@ -258,12 +258,12 @@ def eventPage():
             host_name = host_user.name if host_user else "Unknown"
         else:
             # Check if user is participating in any active events
-            participant_query = """
+            participant_query = text("""
                 SELECT e.* FROM event e 
                 JOIN user_event ue ON e.id = ue.event_id 
                 WHERE ue.user_email = :user_email 
                 AND e.end_time > :current_time
-            """
+            """)
             participating_event = db.session.execute(
                 participant_query,
                 {'user_email': user_email, 'current_time': current_time}
