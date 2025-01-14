@@ -241,6 +241,8 @@ def eventPage():
         hosted_event = Event.query.filter_by(
             host=user_email
         ).filter(Event.end_time > current_time).first()
+
+        flash(hosted_event)
         
         if hosted_event:
             active_event = hosted_event
@@ -414,7 +416,7 @@ def check_user_active_events(user_email):
             active_event = event
         else:
             expired_hosted_events.append(event)
-    
+            
     try:
         # Delete expired event associations for participants
         if expired_user_events:
