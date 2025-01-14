@@ -220,16 +220,16 @@ def logout():
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
 
+# Route file
 @app.route('/event/')
 def eventPage():
     if 'user' not in session:
         flash("Please log in to access events.", 'warning')
         return redirect(url_for('login'))
     
-    # Force UTC timezone for consistent comparison
-    current_time = datetime.now().replace(tzinfo=None)
+    current_time = datetime.now()
     user_email = session['user']
-    
+    flash(current_time)
     # Initialize variables
     active_event = None
     is_host = False
@@ -243,40 +243,23 @@ def eventPage():
         ).filter(Event.end_time > current_time).first()
         
         if hosted_event:
-            # Convert event end time to naive datetime for comparison
-            if hosted_event.end_time.tzinfo:
-                hosted_event.end_time = hosted_event.end_time.replace(tzinfo=None)
-                
-            if hosted_event.end_time > current_time:
-                active_event = hosted_event
-                is_host = True
-                host_user = User.query.filter_by(email=hosted_event.host).first()
-                host_name = host_user.name if host_user else "Unknown"
+            active_event = hosted_event
+            is_host = True
+            host_user = User.query.filter_by(email=hosted_event.host).first()
+            host_name = host_user.name if host_user else "Unknown"
         else:
             # Check if user is participating in any active events
             participating_event = db.session.query(Event).join(UserEvent).filter(
                 UserEvent.user_email == user_email,
                 Event.end_time > current_time
             ).first()
-            
             if participating_event:
-                # Convert event end time to naive datetime for comparison
-                if participating_event.end_time.tzinfo:
-                    participating_event.end_time = participating_event.end_time.replace(tzinfo=None)
-                    
-                if participating_event.end_time > current_time:
-                    active_event = participating_event
-                    host_user = User.query.filter_by(email=participating_event.host).first()
-                    host_name = host_user.name if host_user else "Unknown"
+                active_event = participating_event
+                host_user = User.query.filter_by(email=participating_event.host).first()
+                host_name = host_user.name if host_user else "Unknown"
         
         has_active_event = active_event is not None
         active_event_name = active_event.name if active_event else None
-
-        # Add debug logging
-        app.logger.info(f"Current time: {current_time}")
-        if active_event:
-            app.logger.info(f"Event end time: {active_event.end_time}")
-            app.logger.info(f"Event is active: {has_active_event}")
 
         return render_template('event.html',
                             has_active_event=has_active_event,
@@ -289,7 +272,7 @@ def eventPage():
         app.logger.error(f"Error in eventPage: {str(e)}")
         flash(f"An error occurred while loading the event page. {str(e)}", 'danger')
         return redirect(url_for('home'))
-    
+
 @app.route('/leave_event', methods=['POST'])
 def leave_event():
     if 'user' not in session:
@@ -477,9 +460,9 @@ def host_event():
                 flash("All fields are required.", 'danger')
                 return redirect(url_for('host_event'))
 
-            # Parse datetime strings and ensure naive datetime objects
-            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=None)
-            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=None)
+            # Parse datetime strings
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
 
             # Validate end time is after start time
             if end_time <= start_time:
@@ -516,7 +499,7 @@ def host_event():
             db.session.commit()
 
             flash(f"Event '{name}' created successfully! Code: {code}", 'success')
-            return redirect(url_for('eventPage'))
+            return redirect(url_for('eventPage'))  # Redirect to event page
 
         except ValueError as e:
             flash("Invalid date/time format. Please use the datetime picker.", 'danger')
