@@ -230,38 +230,61 @@ def eventPage():
     current_time = datetime.now(timezone.utc)
     user_email = session['user']
     
-    # Initialize variables
-    active_event = None
-    is_host = False
-    host_name = None
-    has_active_event = False
+    # Debug logging
+    app.logger.info("========= DEBUG INFO =========")
+    app.logger.info(f"Current time: {current_time}")
     
     try:
-        # Check if user is hosting any active events
+        # Log hosted event check
+        hosted_event = Event.query.filter_by(host=user_email).first()  # Remove filter temporarily
+        if hosted_event:
+            app.logger.info(f"Found hosted event:")
+            app.logger.info(f"- Event name: {hosted_event.name}")
+            app.logger.info(f"- End time: {hosted_event.end_time}")
+            app.logger.info(f"- Is end_time > current_time: {hosted_event.end_time > current_time}")
+        
+        # Now apply the filter
         hosted_event = Event.query.filter_by(
             host=user_email
         ).filter(Event.end_time > current_time).first()
-
-        flash(hosted_event)
         
         if hosted_event:
             active_event = hosted_event
             is_host = True
             host_user = User.query.filter_by(email=hosted_event.host).first()
             host_name = host_user.name if host_user else "Unknown"
+            app.logger.info("Event qualified as active hosted event")
         else:
-            # Check if user is participating in any active events
+            # Log participating event check
+            participating_event = db.session.query(Event).join(UserEvent).filter(
+                UserEvent.user_email == user_email
+            ).first()  # Remove filter temporarily
+            
+            if participating_event:
+                app.logger.info(f"Found participating event:")
+                app.logger.info(f"- Event name: {participating_event.name}")
+                app.logger.info(f"- End time: {participating_event.end_time}")
+                app.logger.info(f"- Is end_time > current_time: {participating_event.end_time > current_time}")
+            
+            # Now apply the filter
             participating_event = db.session.query(Event).join(UserEvent).filter(
                 UserEvent.user_email == user_email,
                 Event.end_time > current_time
             ).first()
+            
             if participating_event:
                 active_event = participating_event
                 host_user = User.query.filter_by(email=participating_event.host).first()
                 host_name = host_user.name if host_user else "Unknown"
+                app.logger.info("Event qualified as active participating event")
         
         has_active_event = active_event is not None
         active_event_name = active_event.name if active_event else None
+
+        app.logger.info(f"Final status:")
+        app.logger.info(f"- has_active_event: {has_active_event}")
+        app.logger.info(f"- active_event_name: {active_event_name}")
+        app.logger.info("============================")
 
         return render_template('event.html',
                             has_active_event=has_active_event,
@@ -272,7 +295,7 @@ def eventPage():
                             
     except Exception as e:
         app.logger.error(f"Error in eventPage: {str(e)}")
-        flash(f"An error occurred while loading the event page.", 'danger')
+        flash(f"An error occurred while loading the event page. {str(e)}", 'danger')
         return redirect(url_for('home'))
 
 @app.route('/leave_event', methods=['POST'])
@@ -388,7 +411,7 @@ def check_user_active_events(user_email):
     Returns tuple (is_active, active_event_name) where is_active is True if user 
     has an active event (including as host), and active_event_name is the name of that event.
     """
-    current_time = datetime.now(timezone.utc)
+    current_time = datetime.now()
     
     # Check events where user is a participant
     user_events = db.session.query(Event, UserEvent).join(UserEvent).filter(
@@ -416,7 +439,7 @@ def check_user_active_events(user_email):
             active_event = event
         else:
             expired_hosted_events.append(event)
-            
+    
     try:
         # Delete expired event associations for participants
         if expired_user_events:
@@ -519,7 +542,7 @@ def get_user_active_event(user_email):
     Get user's active event details.
     Returns (event_id, is_expired) tuple. Returns (None, False) if no event found.
     """
-    current_time = datetime.now(timezone.utc)
+    current_time = datetime.now()
     
     # Check events where user is a participant
     user_event = db.session.query(Event, UserEvent).join(UserEvent).filter(
@@ -569,7 +592,7 @@ def join_event():
 
         if event:
             # Check if the event has already ended
-            if event.end_time <= datetime.now(timezone.utc):
+            if event.end_time <= datetime.now():
                 flash("This event has already ended.", 'warning')
                 return redirect(url_for('join_event'))
 
@@ -680,7 +703,7 @@ def send_message(chat_id):
         
         sender = session['user']
         recipient = chat.email_2 if sender == chat.email_1 else chat.email_1
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now()
         
         print(f"Creating message: chat_id={chat_id}, sender={sender}, recipient={recipient}")
         
@@ -929,10 +952,10 @@ def calculate_profile_similarity(current_user: User, other_users: List[User]) ->
             location_score = 1.0
         elif other_user.country == current_user.country:
             location_score = 0.5
-
+            
         # Age similarity (less weight)
-        age_current = (datetime.now(timezone.utc).date() - current_user.dob).days / 365.25
-        age_other = (datetime.now(timezone.utc).date() - other_user.dob).days / 365.25
+        age_current = (datetime.now().date() - current_user.dob).days / 365.25
+        age_other = (datetime.now().date() - other_user.dob).days / 365.25
         age_diff = abs(age_current - age_other)
         age_score = max(0, 1 - (age_diff / 10))  # Normalize age difference to 0-1 scale
         
@@ -1038,7 +1061,7 @@ def ranked_matches(event_id):
     user_email = session['user']
     
     try:
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now()
         event = Event.query.get_or_404(event_id)
         
         # Check if event has expired
