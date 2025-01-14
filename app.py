@@ -15,18 +15,16 @@ from models import db, User, UserResponse, Event, UserEvent, UserChats, UserMess
 from sqlalchemy.exc import IntegrityError
 import os
 from werkzeug.utils import secure_filename
-from datetime import timezone
 import base64
 import google.generativeai as genai
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-from sqlalchemy.sql import text
 from typing import List, Dict
 import json
 import re
 
 GOOGLE_API_KEY='AIzaSyDmKGlt0wQREPzT8vI9WpzB5A37NuvLHlc'
-# GOOGLE_API_KEY='AIzaSyDwsOjC6diV88sDez5BuUeCYheVS0aa5UI'
+GOOGLE_API_KEY='AIzaSyDwsOjC6diV88sDez5BuUeCYheVS0aa5UI'
 # GOOGLE_API_KEY='AIzaSyBJXh--ktIhO3u6d_I51aTjo8brP6VwloU'
 
 app = Flask(__name__)
@@ -43,10 +41,9 @@ supabase_url = "https://jgmvvjlfnqimbwoqqfam.supabase.co"
 supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZ2amxmbnFpbWJ3b3FxZmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUyOTczMTEsImV4cCI6MjA1MDg3MzMxMX0.jED2-HuAoiAdY_BSqFAr2YIaHjF9eSIzdppmSCy1x7Y"  # Ensure this key is correct
 supabase_client = supabase.create_client(supabase_url, supabase_key)
 
-# with app.app_context():
-#     db.drop_all() 
-#     db.create_all()  
-
+with app.app_context():
+    db.drop_all() 
+    db.create_all()  
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -164,7 +161,7 @@ def signup():
 
             # Check if the date format is valid
             try:
-                dob_parsed = datetime.strptime(dob, '%Y-%m-%d').date().astimezone(timezone.utc)
+                dob_parsed = datetime.strptime(dob, '%Y-%m-%d').date()
             except ValueError:
                 flash("Invalid date format. Please use YYYY-MM-DD.", 'danger')
                 return redirect(url_for('signup'))
@@ -223,14 +220,14 @@ def logout():
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
 
+# Route file
 @app.route('/event/')
 def eventPage():
     if 'user' not in session:
         flash("Please log in to access events.", 'warning')
         return redirect(url_for('login'))
     
-    # Get current time in UTC
-    current_time = datetime.utcnow()
+    current_time = datetime.now()
     user_email = session['user']
     
     # Initialize variables
@@ -240,49 +237,29 @@ def eventPage():
     has_active_event = False
     
     try:
-        # Check if user is hosting any active events using UTC comparison
-        active_event_query = text("""
-            SELECT e.* FROM event e 
-            WHERE e.host = :user_email 
-            AND e.end_time > :current_time
-        """)
-        hosted_event = db.session.execute(
-            active_event_query,
-            {'user_email': user_email, 'current_time': current_time}
-        ).fetchone()
+        # Check if user is hosting any active events
+        hosted_event = Event.query.filter_by(
+            host=user_email
+        ).filter(Event.end_time > current_time).first()
         
         if hosted_event:
-            active_event = Event.query.get(hosted_event.id)
+            active_event = hosted_event
             is_host = True
-            host_user = User.query.filter_by(email=active_event.host).first()
+            host_user = User.query.filter_by(email=hosted_event.host).first()
             host_name = host_user.name if host_user else "Unknown"
         else:
             # Check if user is participating in any active events
-            participant_query = text("""
-                SELECT e.* FROM event e 
-                JOIN user_event ue ON e.id = ue.event_id 
-                WHERE ue.user_email = :user_email 
-                AND e.end_time > :current_time
-            """)
-            participating_event = db.session.execute(
-                participant_query,
-                {'user_email': user_email, 'current_time': current_time}
-            ).fetchone()
-            
+            participating_event = db.session.query(Event).join(UserEvent).filter(
+                UserEvent.user_email == user_email,
+                Event.end_time > current_time
+            ).first()
             if participating_event:
-                active_event = Event.query.get(participating_event.id)
-                host_user = User.query.filter_by(email=active_event.host).first()
+                active_event = participating_event
+                host_user = User.query.filter_by(email=participating_event.host).first()
                 host_name = host_user.name if host_user else "Unknown"
         
         has_active_event = active_event is not None
         active_event_name = active_event.name if active_event else None
-
-        # Debug logging
-        print(f"UTC Current time: {current_time}")
-        if active_event:
-            print(f"Event end time: {active_event.end_time}")
-            print(f"Is event active? {has_active_event}")
-            print(f"Time difference: {active_event.end_time - current_time}")
 
         return render_template('event.html',
                             has_active_event=has_active_event,
@@ -292,8 +269,8 @@ def eventPage():
                             is_host=is_host)
                             
     except Exception as e:
-        print(f"Error in eventPage: {str(e)}")
-        flash(f"An error occurred while loading the event page.", 'danger')
+        app.logger.error(f"Error in eventPage: {str(e)}")
+        flash(f"An error occurred while loading the event page. {str(e)}", 'danger')
         return redirect(url_for('home'))
 
 @app.route('/leave_event', methods=['POST'])
@@ -437,7 +414,7 @@ def check_user_active_events(user_email):
             active_event = event
         else:
             expired_hosted_events.append(event)
-    
+    flash(expired_hosted_events)
     try:
         # Delete expired event associations for participants
         if expired_user_events:
@@ -461,33 +438,54 @@ def check_user_active_events(user_email):
 
 @app.route('/host/', methods=['GET', 'POST'])
 def host_event():
+    if 'user' not in session:
+        flash("Please log in to host an event.", 'warning')
+        return redirect(url_for('login'))
+
+    # Check if user has active events
+    has_active_event, active_event_name = check_user_active_events(session['user'])
+    if has_active_event:
+        flash(f"You are already part of an active event: {active_event_name}. "
+              "Please wait until it ends before hosting another event.", 'warning')
+        return redirect(url_for('home'))
+
     if request.method == 'POST':
         try:
             name = request.form.get('name')
             start_time_str = request.form.get('start_time')
             end_time_str = request.form.get('end_time')
             
+            # Validate required fields
             if not all([name, start_time_str, end_time_str]):
                 flash("All fields are required.", 'danger')
                 return redirect(url_for('host_event'))
 
-            # Convert input times to UTC
-            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M').astimezone(timezone.utc)
-            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M').astimezone(timezone.utc)
+            # Parse datetime strings
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
+            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
 
-            # Generate code and create event with UTC times
+            # Validate end time is after start time
+            if end_time <= start_time:
+                flash("End time must be after start time.", 'danger')
+                return redirect(url_for('host_event'))
+
+            # Generate unique 4-digit code
             while True:
                 code = f"{random.randint(1000, 9999)}"
                 if not Event.query.filter_by(code=code).first():
                     break
 
-            # Generate QR code
+            # Create QR code directory if it doesn't exist
+            qr_dir = os.path.join(app.static_folder, 'qr_codes')
+            os.makedirs(qr_dir, exist_ok=True)
+
+            # Generate and save QR code
             qr = qrcode.make(code)
             img_byte_arr = BytesIO()
             qr.save(img_byte_arr, format='PNG')
             img_str = base64.b64encode(img_byte_arr.getvalue()).decode()
 
-            # Create event with UTC times
+            # Create new event
             event = Event(
                 name=name,
                 code=code,
@@ -500,11 +498,12 @@ def host_event():
             db.session.add(event)
             db.session.commit()
 
-            print(f"Created event with UTC times - Start: {start_time}, End: {end_time}")
-            
             flash(f"Event '{name}' created successfully! Code: {code}", 'success')
-            return redirect(url_for('eventPage'))
+            return redirect(url_for('eventPage'))  # Redirect to event page
 
+        except ValueError as e:
+            flash("Invalid date/time format. Please use the datetime picker.", 'danger')
+            return redirect(url_for('host_event'))
         except Exception as e:
             db.session.rollback()
             print(f"Error creating event: {str(e)}")
