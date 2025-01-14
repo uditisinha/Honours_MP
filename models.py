@@ -32,11 +32,11 @@ class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     code = db.Column(db.String(10), unique=True, nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime, nullable=False)
+    start_time = db.Column(db.DateTime(timezone=True), nullable=False)
+    end_time = db.Column(db.DateTime(timezone=True), nullable=False)
     host = db.Column(db.String(120), nullable=False)
-    qr = db.Column(db.Text, nullable=True) 
-
+    qr = db.Column(db.Text, nullable=True)
+    
 class UserEvent(db.Model):
     __tablename__ = 'user_event'
     user_email = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
