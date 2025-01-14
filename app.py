@@ -164,7 +164,7 @@ def signup():
 
             # Check if the date format is valid
             try:
-                dob_parsed = datetime.strptime(dob, '%Y-%m-%d').date()
+                dob_parsed = datetime.strptime(dob, '%Y-%m-%d').date().astimezone(timezone.utc)
             except ValueError:
                 flash("Invalid date format. Please use YYYY-MM-DD.", 'danger')
                 return redirect(url_for('signup'))
