@@ -17,14 +17,13 @@ import os
 from werkzeug.utils import secure_filename
 import base64
 import google.generativeai as genai
-from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from typing import List, Dict
 import json
 import re
 
 GOOGLE_API_KEY='AIzaSyDmKGlt0wQREPzT8vI9WpzB5A37NuvLHlc'
-GOOGLE_API_KEY='AIzaSyDwsOjC6diV88sDez5BuUeCYheVS0aa5UI'
+# GOOGLE_API_KEY='AIzaSyDwsOjC6diV88sDez5BuUeCYheVS0aa5UI'
 # GOOGLE_API_KEY='AIzaSyBJXh--ktIhO3u6d_I51aTjo8brP6VwloU'
 
 app = Flask(__name__)
@@ -43,7 +42,8 @@ supabase_client = supabase.create_client(supabase_url, supabase_key)
 
 # with app.app_context():
 #     db.drop_all() 
-#     db.create_all()  
+#     db.create_all()
+  
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -219,6 +219,123 @@ def logout():
     session.pop('user', None)
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
+
+@app.route('/join-event/<int:event_id>', methods=['GET', 'POST'])
+def join_event_from_list(event_id):
+    if 'user' not in session:
+        flash("Please log in to join events.", "warning")
+        return redirect(url_for('login'))
+    
+    try:
+        # Get the event
+        event = Event.query.get(event_id)
+        if not event:
+            flash("Event not found.", "error")
+            return redirect(url_for('public_events'))
+        
+        if request.method == 'POST':
+            event_code = request.form.get('event_code')
+            
+            # Verify the event code
+            if event_code != event.code:
+                flash("Invalid event code. Please try again.", "error")
+                return render_template('join_event_from_list.html', event=event)
+            
+            user_email = session['user']
+            
+            # Check if user is already registered for this event
+            existing_registration = UserEvent.query.filter_by(
+                user_email=user_email,
+                event_id=event_id
+            ).first()
+            
+            if existing_registration:
+                flash("You are already registered for this event.", "info")
+                return redirect(url_for('public_events'))
+            
+            # Register the user for the event
+            new_registration = UserEvent(
+                user_email=user_email,
+                event_id=event_id
+            )
+            
+            db.session.add(new_registration)
+            db.session.commit()
+            
+            flash("Successfully joined the event!", "success")
+            return redirect(url_for('public_events'))
+            
+        return render_template('join_event_from_list.html', event=event)
+        
+    except Exception as e:
+        app.logger.error(f"Error in join_event: {str(e)}")
+        flash("An error occurred while joining the event.", "error")
+        return redirect(url_for('public_events'))
+
+@app.route('/events/public')
+def public_events():
+    if 'user' not in session:
+        flash("Please log in to access events.", 'warning')
+        return redirect(url_for('login'))
+    
+    try:
+        current_time = datetime.now()
+        user_email = session['user']
+        
+        # Get user's city
+        user = User.query.filter_by(email=user_email).first()
+        if not user:
+            flash("User not found.", "error")
+            return redirect(url_for('home'))
+
+        # Check if user is hosting any active events
+        hosted_event = Event.query.filter_by(
+            host=user_email
+        ).filter(Event.end_time > current_time).first()
+        
+        # Check if user is participating in any events
+        participating_event = None
+        if not hosted_event:
+            participating_event = db.session.query(Event).join(UserEvent).filter(
+                UserEvent.user_email == user_email,
+                Event.end_time > current_time
+            ).first()
+        
+        # Get all public events in user's city
+        events = Event.query.filter(
+            Event.city == user.city,
+            Event.is_private == False,
+            Event.end_time > current_time
+        ).order_by(Event.start_time.asc()).all()
+
+        events_data = []
+        for event in events:
+            # Get host information
+            host = User.query.filter_by(email=event.host).first()
+            host_name = host.name if host else "Unknown"
+
+            # Get participant count
+            participant_count = UserEvent.query.filter_by(event_id=event.id).count()
+
+            events_data.append({
+                "event": event,
+                "host_name": host_name,
+                "participant_count": participant_count
+            })
+
+        return render_template(
+            'public_events.html',
+            events_data=events_data,
+            city=user.city,
+            current_time=current_time,
+            hosted_event=hosted_event,
+            participating_event=participating_event
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error in public_events: {str(e)}")
+        flash("An error occurred while loading events.", "error")
+        return redirect(url_for('home'))
 
 # Route file
 @app.route('/event/')
@@ -451,12 +568,17 @@ def host_event():
 
     if request.method == 'POST':
         try:
+            # Retrieve form data
             name = request.form.get('name')
             start_time_str = request.form.get('start_time')
             end_time_str = request.form.get('end_time')
-            
+            address = request.form.get('address')
+            city = request.form.get('city')
+            is_private = request.form.get('is_private') == 'true'  # Convert to boolean
+            description = request.form.get('description')
+
             # Validate required fields
-            if not all([name, start_time_str, end_time_str]):
+            if not all([name, start_time_str, end_time_str, address, city]):
                 flash("All fields are required.", 'danger')
                 return redirect(url_for('host_event'))
 
@@ -485,12 +607,16 @@ def host_event():
             qr.save(img_byte_arr, format='PNG')
             img_str = base64.b64encode(img_byte_arr.getvalue()).decode()
 
-            # Create new event
+            # Create new event with all fields
             event = Event(
                 name=name,
                 code=code,
                 start_time=start_time,
                 end_time=end_time,
+                address=address,
+                city=city,
+                is_private=is_private,
+                description=description,
                 host=session['user'],
                 qr=img_str
             )
@@ -511,6 +637,7 @@ def host_event():
             return redirect(url_for('host_event'))
 
     return render_template('host_event.html')
+
 
 def get_user_active_event(user_email):
     """

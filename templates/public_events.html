@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">Public Events in {{ city }}</h1>
+        <p class="text-gray-600">Discover exciting events happening in your city</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if hosted_event %}
+        <div class="toppart">
+            <div class="event-info">
+                <h3>You are currently hosting:</h3>
+                <p>{{ hosted_event.name }}</p>
+                
+                <h3>Event QR Code:</h3>
+                <div class="qr-code">
+                    <a href="data:image/png;base64,{{ hosted_event.qr }}" download="event_qr.png">
+                        <img src="data:image/png;base64,{{ hosted_event.qr }}" alt="Event QR Code" class="qr-image">
+                    </a>
+                </div>
+                
+                <h3>Event Code:</h3>
+                <p class="event-code">{{ hosted_event.code }}</p>
+
+                <h3>Event Time:</h3>
+                <p>{{ hosted_event.start_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</p>
+            </div>
+        </div>
+    {% elif participating_event %}
+        <div class="event-info">
+            <h3>You are currently participating in:</h3>
+            <p>{{ participating_event.name }}</p>
+            
+            <h3>Event Time:</h3>
+            <p>{{ participating_event.start_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</p>
+            
+            <div class="buttonclass">
+                <div class="button">
+                    <a href="{{ url_for('ranked_matches', event_id=participating_event.id) }}">Ranked Matches</a>
+                </div>
+            </div>
+            
+            <form action="{{ url_for('leave_event') }}" method="POST" style="display: inline;">
+                <input type="hidden" name="event_id" value="{{ participating_event.id }}">
+                <button type="submit">Leave Event</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="buttonclass">
+            <div class="joinhost">
+                <div class="button">
+                    <a href="{{ url_for('join_event') }}">Join event</a>
+                </div>
+            </div>
+            <div class="joinhost">
+                <div class="button">
+                    <a href="{{ url_for('host_event') }}">Host event</a>
+                </div>
+            </div>
+        </div>
+
+        {% if not events_data %}
+            <div class="text-center p-8 bg-gray-50 rounded-lg">
+                <p class="text-gray-600">No public events found in your city</p>
+            </div>
+        {% else %}
+            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {% for event_item in events_data %}
+                    {% set event = event_item.event %}
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="p-6">
+                            <h2 class="text-xl font-semibold mb-2">{{ event.name }}</h2>
+                            <div class="mb-4">
+                                <p class="text-gray-600">{{ event.description }}</p>
+                            </div>
+                            <div class="space-y-2 text-sm text-gray-500">
+                                <div class="flex items-center">
+                                    {{ event.address }}
+                                </div>
+                                <div class="flex items-center">
+                                    {{ event.start_time.strftime('%A, %B %d, %Y at %I:%M %p') }}
+                                </div>
+                                <div class="flex items-center">
+                                    {{ event_item.participant_count }} participant{{ 's' if event_item.participant_count != 1 }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 bg-gray-50 border-t">
+                            <p class="text-sm text-gray-500">
+                                Hosted by {{ event_item.host_name }}
+                            </p>
+                        </div>
+                        
+                        <div class="button">
+                            <a href="{{ url_for('join_event_from_list', event_id=event.id) }}">Join this event</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

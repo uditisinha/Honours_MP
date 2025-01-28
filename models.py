@@ -37,6 +37,12 @@ class Event(db.Model):
     host = db.Column(db.String(120), nullable=False)
     qr = db.Column(db.Text, nullable=True)
     
+    # New fields
+    address = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    is_private = db.Column(db.Boolean, nullable=False, default=False)  # True for private, False for public
+    description = db.Column(db.Text, nullable=True)
+
 class UserEvent(db.Model):
     __tablename__ = 'user_event'
     user_email = db.Column(db.String(120), db.ForeignKey('user.email'), primary_key=True)
