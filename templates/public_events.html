@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Public Events</title>
     <style>
-
         .event-card {
             background-image: linear-gradient(to right bottom, #2d0829, #27092c, #1f0a2f, #160b31, #080c33);
             color: white;
             border-bottom-left-radius: 1vh;
             border-top-right-radius: 1vh;
             margin-top: 1vh;
+            padding-bottom: 2vh;
         }
 
         .event-title {
@@ -26,6 +26,7 @@
             margin: 0;
             margin-left: 5vw;
         }
+
         .event-host {
             padding: 0;
             margin: 0;
@@ -51,31 +52,49 @@
             margin: 0;
             margin-left: 5vw;
         }
+        button{           
+            padding: 1.5vh;
+            margin: 1vh;
+            border-radius: 10px;
+            width: 100%;
+            border: none;
+            font-family: 'Quicksand', sans-serif;
+            margin: auto;
+            justify-content: center;
+            text-align: center;
+            font-size: 2.5vh;
+            margin-bottom: 2vh;
+            background-image: linear-gradient(to right, #c47c25, #c16a25, #bb5728, #b4442b, #ab312f);
+        }
 
         .join-button {
             width: 100%;
             text-align: center;
-            padding-bottom: 5vh;
+            padding-bottom: 2vh;
             text-decoration: none;
             color: black;
             margin-top: 4vh;
         }
-        .buttonclass{
+
+        .buttonclass {
             margin-top: 2vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        .buttonclass h2{
+
+        .buttonclass h2 {
             text-align: center;
             color: white;
         }
-        .joinhost{
+
+        .joinhost {
             border-radius: 10px;
             padding: 1vh;
             margin: 1vh;
         }
-        .button{
+
+        .button {
             margin: 1vh;
             border-radius: 10px;
             width: 80%;
@@ -87,19 +106,17 @@
             color: black;
             background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
         }
-        .button:hover{
+
+        .button:hover {
             background-image: linear-gradient(to right, #80760f, #89720e, #926e11, #9a6a16, #a1651c);
         }
-        .button a{
-            text-decoration: none;
-            color: black
-            margin: auto;
-        }
-        .top{
+
+        .top {
             display: flex;
             margin-bottom: 3vh;
         }
-        .topic{
+
+        .topic {
             background-color: #0A0E36;
             color: white;
             border-top-right-radius: 5px;
@@ -110,17 +127,92 @@
             text-align: center;
             margin-top: 1vh;
         }
+
+        .toppart {
+            background-image: linear-gradient(to right bottom, #2d0829, #27092c, #1f0a2f, #160b31, #080c33);
+            color: white;
+            border-bottom-left-radius: 1vh;
+            border-top-right-radius: 1vh;
+            padding: 3vh 5vw;
+            margin-bottom: 2vh;
+        }
+
+        .host-info {
+            text-align: center;
+            margin-bottom: 2vh;
+        }
+
+        .qr-code {
+            margin: 2vh 0;
+        }
+
+        .qr-image {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .event-code {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 1vh 0;
+        }
+
+        .danger-button {
+            background-image: linear-gradient(to right, #c62828, #b71c1c, #a71717, #961212, #850e0e);
+        }
+
+        .danger-button:hover {
+            background-image: linear-gradient(to right, #961212, #850e0e, #740a0a, #630606, #520202);
+        }
     </style>
 </head>
 <body>
     {% extends "base.html" %}
     
     {% block content %}
-    
     <div class="top">
         <div class="topic">Event</div>
     </div>
 
+    {% if hosted_event %}
+        <div class="toppart">
+            <div class="host-info">
+                <div class="event-info">
+                    <h3>Name of the event:</h3>
+                    <p>{{ hosted_event.name }}</p>
+                </div>
+                <h3>Event QR Code:</h3>
+                <div class="qr-code">
+                    <a href="data:image/png;base64,{{ hosted_event.qr }}" download="event_qr.png">
+                        <img src="data:image/png;base64,{{ hosted_event.qr }}" alt="Event QR Code" class="qr-image">
+                    </a>
+                </div>
+                <h1>OR</h1>
+                <h3>Event Code:</h3>
+                <p class="event-code">{{ hosted_event.code }}</p>
+                <div class="event-info">
+                    <h3>Description of the event:</h3>
+                    <p>{{ hosted_event.description }}</p>
+                </div>
+            </div>
+        </div>
+    {% elif participating_event %}
+        <div class="toppart">
+            <div class="event-info">
+                <h3>Name of the event:</h3>
+                <p>{{ participating_event.name }}</p>
+                <h3>Description of the event:</h3>
+                <p>{{ participating_event.description }}</p>
+            </div>
+            <div class="buttonclass">
+                <a href="{{ url_for('ranked_matches', event_id=participating_event.id) }}" class="button">View Ranked Matches</a>
+            </div>
+                <form action="{{ url_for('leave_event') }}" method="POST">
+                    <input type="hidden" name="event_id" value="{{ participating_event.id }}">
+                    <button type="submit" class="btn btn-danger">Leave Event</button>
+                </form>
+        </div>
+    {% else %}
         <div class="buttonclass">
             <div class="joinhost">
                 <a href="{{ url_for('join_event') }}" class="button">Join event</a>
@@ -152,7 +244,7 @@
             <p class="event-description">No public events found in your city</p>
         </div>
         {% endif %}
-        {% endblock %}
-        
+    {% endif %}
+    {% endblock %}
 </body>
 </html>

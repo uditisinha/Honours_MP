@@ -1,59 +1,137 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-md mx-auto">
-        <h1 class="text-3xl font-bold mb-6">Join Event</h1>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-xl font-semibold mb-2">{{ event.name }}</h2>
-            <p class="text-gray-600 mb-4">{{ event.description }}</p>
-            <div class="text-sm text-gray-500 space-y-2">
-                <p>{{ event.address }}</p>
-                <p>{{ event.start_time.strftime('%A, %B %d, %Y at %I:%M %p') }}</p>
-            </div>
+<head>
+    <style>
+        .button{
+            padding: 1.5vh;
+            margin: 1vh;
+            border-radius: 10px;
+            width: 50%;
+            margin: auto;
+            text-align: center;
+            margin-bottom: 2vh;
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+        }
+        .button:hover{
+            background-image: linear-gradient(to right, #80760f, #89720e, #926e11, #9a6a16, #a1651c);
+        }
+        .footer {
+            margin-top: auto;
+        }
+        .button a{
+            text-decoration: none;
+            color: black;
+            margin: auto;
+            font-size: 2.5vh;
+        }
+        a{
+            color: black;
+        }
+        label{
+            margin-top: 1vh;
+            font-size: 3vh;
+            font-weight: 500;
+        }
+        .joinevent{
+            justify-content: center;
+            border-radius: 10px;
+            padding: 3vh;
+            padding-bottom: 2vh;
+            background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
+        }
+        .joinevent input{
+            padding: 2vh;
+            width: 90%;
+            margin-top: 1vh;
+            border-style: solid;
+            border-color: black;
+            border-width: 1px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            margin: auto;
+            justify-content: center;
+            margin-top: 1vh;
+        }
+        .joinevent button{
+            padding: 1.5vh;
+            width: 100%;
+            margin-top: 3vh;
+            border-style: solid;
+            margin-bottom: 0;
+            border-color: black;
+            border-width: 1px;
+            border-radius: 5px;
+            color: white;
+            font-size: 2.5vh;
+            background-image: linear-gradient(to right, #712f6a, #632b6c, #52296f, #3d2770, #1e2671);
+        }
+        .joinevent button:hover{
+            background-image: linear-gradient(to right, #572251, #491f51, #3a1d4f, #291b4d, #14194a);
+        }
+        .top{
+            display: flex;
+            margin-bottom: 3vh;
+        }
+        .topic{
+            background-color: #0A0E36;
+            color: white;
+            border-top-right-radius: 5px;
+            border-bottom-left-radius: 5px;
+            width: 40%;
+            padding: 1vh;
+            height: 3vh;
+            text-align: center;
+            margin-top: 1vh;
+        }
+        .event-details {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2vh;
+            margin-bottom: 3vh;
+        }
+        .event-details h2 {
+            font-size: 2.5vh;
+            font-weight: 600;
+            margin-bottom: 1vh;
+        }
+        .event-details p {
+            font-size: 2vh;
+            color: #666;
+            margin-bottom: 1vh;
+        }
+        .cancel-button {
+            background-image: linear-gradient(to right, #808080, #707070, #606060, #505050, #404040);
+            color: white;
+            padding: 1.5vh;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+            margin-top: 2vh;
+        }
+        .cancel-button:hover {
+            background-image: linear-gradient(to right, #606060, #505050, #404040, #303030, #202020);
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div class="top">
+            <div class="topic">Join {{ event.name }}</div>
         </div>
 
-        <form method="POST" class="bg-white rounded-lg shadow-md p-6">
-            <div class="mb-4">
-                <label for="event_code" class="block text-sm font-medium text-gray-700 mb-2">
-                    Enter Event Code
-                </label>
-                <input 
-                    type="text" 
-                    id="event_code" 
-                    name="event_code" 
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter the event code"
-                >
-            </div>
-            
-            <div class="flex justify-between">
-                <button 
-                    type="submit" 
-                    class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                    Join Event
-                </button>
-                <a 
-                    href="{{ url_for('public_events') }}" 
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                >
-                    Cancel
-                </a>
-            </div>
-        </form>
+        <div class="joinevent">
+            <form method="POST">
+                <div>
+                    <label for="event_code">Enter Event Code:</label>
+                    <input type="text" id="event_code" name="event_code" placeholder="Enter event code" required>
+                </div>
+                <button type="submit">Join Event</button>
+            </form>
+        </div>
     </div>
-</div>
+</body>
 {% endblock %}

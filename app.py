@@ -531,7 +531,6 @@ def check_user_active_events(user_email):
             active_event = event
         else:
             expired_hosted_events.append(event)
-    flash(expired_hosted_events)
     try:
         # Delete expired event associations for participants
         if expired_user_events:
