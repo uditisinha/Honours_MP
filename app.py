@@ -401,14 +401,14 @@ def leave_event():
     
     if not event_id:
         flash("Invalid request.", 'danger')
-        return redirect(url_for('eventPage'))
+        return redirect(url_for('public_events'))
     
     try:
         # Check if user is a host
         event = Event.query.filter_by(id=event_id).first()
         if event and event.host == user_email:
             flash("Event hosts cannot leave their own event.", 'danger')
-            return redirect(url_for('eventPage'))
+            return redirect(url_for('public_events'))
         
         # Delete the user's event association
         user_event = UserEvent.query.filter_by(
@@ -427,7 +427,7 @@ def leave_event():
         db.session.rollback()
         flash(f"Error leaving event: {str(e)}", 'danger')
     
-    return redirect(url_for('eventPage'))
+    return redirect(url_for('public_events'))
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -625,7 +625,7 @@ def host_event():
             db.session.commit()
 
             flash(f"Event '{name}' created successfully! Code: {code}", 'success')
-            return redirect(url_for('eventPage'))  # Redirect to event page
+            return redirect(url_for('public_events'))  # Redirect to event page
 
         except ValueError as e:
             flash("Invalid date/time format. Please use the datetime picker.", 'danger')
