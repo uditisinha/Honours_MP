@@ -79,7 +79,7 @@
             color: white;
             border-top-right-radius: 5px;
             border-bottom-left-radius: 5px;
-            width: 40%;
+            width: fit-content;
             padding: 1vh;
             height: 3vh;
             text-align: center;
@@ -101,19 +101,9 @@
             color: #666;
             margin-bottom: 1vh;
         }
-        .cancel-button {
-            background-image: linear-gradient(to right, #808080, #707070, #606060, #505050, #404040);
-            color: white;
-            padding: 1.5vh;
-            border-radius: 5px;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            width: 100%;
-            margin-top: 2vh;
-        }
-        .cancel-button:hover {
-            background-image: linear-gradient(to right, #606060, #505050, #404040, #303030, #202020);
+        .buttonclass{
+            margin-top: 5vh;
+            justify-content: center;
         }
     </style>
 </head>
@@ -123,15 +113,74 @@
             <div class="topic">Join {{ event.name }}</div>
         </div>
 
-        <div class="joinevent">
-            <form method="POST">
-                <div>
-                    <label for="event_code">Enter Event Code:</label>
-                    <input type="text" id="event_code" name="event_code" placeholder="Enter event code" required>
+        <div>
+            <div class="buttonclass">
+                <div class="button" id="openCamera">
+                    Open Camera to Scan QR
                 </div>
-                <button type="submit">Join Event</button>
-            </form>
+                <div id="qr-reader" class="hidden mb-4" style="max-width: 600px"></div>
+                <p id="qr-result" class="text-gray-700"></p>
+            </div>
+
+            <h1 style="text-align: center;">OR</h1>
+
+            <div class="joinevent">
+                <form method="POST">
+                    <div>
+                        <label for="event_code">Enter Event Code:</label>
+                        <input type="text" id="event_code" name="event_code" placeholder="Enter event code" required>
+                    </div>
+                    <button type="submit">Join Event</button>
+                </form>
+            </div>
         </div>
     </div>
+
+    <!-- Include HTML5-QRCode library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let html5QrcodeScanner = null;
+            const qrReader = document.getElementById('qr-reader');
+            const codeInput = document.getElementById('event_code');
+
+            document.getElementById('openCamera').addEventListener('click', function() {
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.clear();
+                }
+                
+                qrReader.classList.remove('hidden');
+                
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "qr-reader", 
+                    { 
+                        fps: 10,
+                        qrbox: 250,
+                        aspectRatio: 1.0
+                    }
+                );
+
+                function onScanSuccess(decodedText) {
+                    // Stop scanning
+                    html5QrcodeScanner.clear();
+                    qrReader.classList.add('hidden');
+                    
+                    // Set the code in the input field
+                    codeInput.value = decodedText;
+                    
+                    // Submit the form automatically
+                    document.querySelector('form').submit();
+                }
+
+                function onScanError(error) {
+                    // Handle scan error if needed
+                    console.warn(error);
+                }
+
+                html5QrcodeScanner.render(onScanSuccess, onScanError);
+            });
+        });
+    </script>
 </body>
 {% endblock %}

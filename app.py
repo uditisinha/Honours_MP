@@ -219,59 +219,65 @@ def logout():
     session.pop('user', None)
     flash("You have been logged out.", 'info')
     return redirect(url_for('login'))
-
 @app.route('/join-event/<int:event_id>', methods=['GET', 'POST'])
 def join_event_from_list(event_id):
     if 'user' not in session:
         flash("Please log in to join events.", "warning")
         return redirect(url_for('login'))
-    
+   
     try:
         # Get the event
         event = Event.query.get(event_id)
         if not event:
             flash("Event not found.", "error")
             return redirect(url_for('public_events'))
-        
+       
+        # Check if user is already part of an active event
+        has_active_event, active_event_name = check_user_active_events(session['user'])
+        if has_active_event:
+            flash(f"You are already part of an active event: {active_event_name}. "
+                  "Please wait until it ends before joining another event.", 'warning')
+            return redirect(url_for('home'))
+       
         if request.method == 'POST':
             event_code = request.form.get('event_code')
-            
+           
             # Verify the event code
             if event_code != event.code:
                 flash("Invalid event code. Please try again.", "error")
                 return render_template('join_event_from_list.html', event=event)
-            
+           
             user_email = session['user']
-            
+           
             # Check if user is already registered for this event
             existing_registration = UserEvent.query.filter_by(
                 user_email=user_email,
                 event_id=event_id
             ).first()
-            
+           
             if existing_registration:
                 flash("You are already registered for this event.", "info")
                 return redirect(url_for('public_events'))
-            
+           
             # Register the user for the event
             new_registration = UserEvent(
                 user_email=user_email,
                 event_id=event_id
             )
-            
+           
             db.session.add(new_registration)
             db.session.commit()
-            
+           
             flash("Successfully joined the event!", "success")
             return redirect(url_for('public_events'))
-            
+       
         return render_template('join_event_from_list.html', event=event)
-        
+       
     except Exception as e:
         app.logger.error(f"Error in join_event: {str(e)}")
         flash("An error occurred while joining the event.", "error")
         return redirect(url_for('public_events'))
-
+    
 @app.route('/events/public')
 def public_events():
     if 'user' not in session:
