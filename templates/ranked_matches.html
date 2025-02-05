@@ -20,11 +20,10 @@
             margin-left: auto;
         }
         .maindiv{
-            background-color: rgba(0, 0, 0, 0.297);
             color: white;
             width: fit-content;
-            border-radius: 10px;
             padding-bottom: 2vh;
+            margin: auto;
         }
         .maindiv img{
             margin: auto;
@@ -80,6 +79,13 @@
             background-image: linear-gradient(to right, #a79a0c, #b0930e, #b88b15, #bf841d, #c47c25);
         }
 
+        .childdiv{
+            margin: 2vh;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.297);
+            padding: 2vh;
+        }
+
         .addchat:hover{
             opacity: 0.8;
         }
@@ -97,10 +103,10 @@
     {% if matches %}
     <div class="maindiv">
         {% for match in matches %}
-        <div>
+        <div class="childdiv">
             <div>
                 <div>
-                    <img src="{{ match.user.avatar if match.user.avatar else url_for('static', filename='images/user.png') }}" alt="Profile Picture" class="avatar">
+                    <!-- <img src="{{ match.user.avatar if match.user.avatar else url_for('static', filename='images/user.png') }}" alt="Profile Picture" class="avatar"> -->
                     <h1>{{ match.user.name }}</h1>
                     <p style="font-style: italic; color:#aeaeae;">Match Score: {{ "%.0f"|format(match.score * 100) }}%</p>
                     {% if match.user.bio != "None" %}
